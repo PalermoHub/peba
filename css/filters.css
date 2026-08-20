@@ -1,0 +1,219 @@
+/* ════════════════════════════════════════
+   Filtri intelligenti — ricerca, chip, modale, legenda cliccabile
+════════════════════════════════════════ */
+
+/* ── Legenda cliccabile (funziona da filtro) ── */
+.map-legend-hint {
+  text-transform: none;
+  font-weight: 400;
+  letter-spacing: 0;
+  color: #b8c2e0;
+  font-size: 8px;
+}
+.legend-row[data-dim] {
+  cursor: pointer;
+  border-radius: 5px;
+  padding: 2px 4px;
+  margin: 0 -4px;
+  transition: background .12s, opacity .12s;
+  justify-content: space-between;
+  gap: 6px;
+}
+.legend-row[data-dim]:hover { background: rgba(255, 153, 0, 0.10); }
+.legend-row[data-dim].active { background: rgba(255, 153, 0, 0.16); }
+.legend-row[data-dim].active .legend-label { color: #b36b00; font-weight: 700; }
+.legend-row[data-dim].dimmed { opacity: .38; }
+.legend-row[data-dim].empty { opacity: .28; pointer-events: none; }
+.legend-label { flex: 1; }
+.legend-count { font-size: 9.5px; color: #8898c8; font-weight: 600; }
+
+/* ── Barra ricerca + filtri ── */
+#pf-bar {
+  position: absolute;
+  bottom: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: center;
+  width: clamp(240px, 34vw, 380px);
+}
+
+#pf-chips {
+  display: none;
+  flex-wrap: wrap;
+  gap: 5px;
+  justify-content: center;
+  width: 100%;
+}
+.pf-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(36, 88, 200, 0.09);
+  border: 1px solid rgba(36, 88, 200, 0.3);
+  border-radius: 20px;
+  padding: 3px 6px 3px 10px;
+  font-size: 10.5px;
+  font-weight: 600;
+  color: #2458c8;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(30, 60, 160, 0.12);
+}
+.pf-chip-close {
+  background: none; border: none; cursor: pointer;
+  padding: 1px 3px; line-height: 1; color: inherit; opacity: .55; font-size: 9px;
+  display: flex; align-items: center;
+}
+.pf-chip-close:hover { opacity: 1; }
+.pf-chip-resetall {
+  background: rgba(192, 48, 48, 0.08);
+  border-color: rgba(192, 48, 48, 0.35);
+  color: #b02020;
+  cursor: pointer;
+  font-family: inherit;
+  font-weight: 700;
+  padding: 3px 10px;
+}
+.pf-chip-resetall:hover { background: rgba(192, 48, 48, 0.15); }
+
+#pf-searchbar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.97);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(30, 60, 160, 0.14);
+  border-radius: 24px;
+  box-shadow: 4px 2px 18px rgba(30, 60, 160, 0.13);
+  width: 100%;
+  height: 40px;
+}
+.pf-si { flex-shrink: 0; padding: 0 8px 0 14px; color: #7888c0; pointer-events: none; display: flex; align-items: center; }
+#pf-search-input {
+  flex: 1; min-width: 0; background: transparent; border: none; outline: none;
+  color: #2a3a68; font-size: 12.5px; font-family: inherit;
+}
+#pf-search-input::placeholder { color: #a0acd0; }
+#pf-search-clear {
+  background: none; border: none; cursor: pointer; color: #a0acd0;
+  padding: 4px 6px; font-size: 11px; flex-shrink: 0;
+}
+#pf-search-clear:hover { color: #2a3a68; }
+.pf-sep { width: 1px; height: 18px; background: rgba(30, 60, 160, 0.15); flex-shrink: 0; margin: 0 2px; }
+
+#pf-filter-btn {
+  position: relative; flex-shrink: 0; width: 30px; height: 30px; margin-right: 5px;
+  background: #2458c8; border: none; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; color: #fff; transition: background .15s;
+}
+#pf-filter-btn:hover { filter: brightness(1.1); }
+#pf-filter-btn.active { background: #e07800; }
+#pf-filter-badge {
+  position: absolute; top: -3px; right: -3px;
+  background: #e07800; color: #fff; border-radius: 50%;
+  width: 15px; height: 15px; font-size: 9px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  border: 2px solid #fff; pointer-events: none;
+}
+
+#pf-search-dd {
+  display: none; position: absolute; bottom: calc(100% + 8px);
+  left: 0; right: 0;
+  background: #fff; border: 1px solid rgba(30, 60, 160, 0.14);
+  border-radius: 12px; box-shadow: 4px -4px 20px rgba(30, 60, 160, 0.18);
+  max-height: 280px; overflow-y: auto; z-index: 200;
+}
+#pf-search-dd.open { display: block; }
+.pf-dd-item {
+  padding: 8px 13px; display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  cursor: pointer; font-size: 12px; color: #2a3a68; border-bottom: 1px solid rgba(30,60,160,0.06);
+}
+.pf-dd-item:last-child { border-bottom: none; }
+.pf-dd-item:hover { background: rgba(36, 88, 200, 0.07); }
+.pf-dd-name { font-weight: 600; }
+.pf-dd-badge {
+  flex-shrink: 0; font-size: 9.5px; padding: 2px 7px; border-radius: 10px;
+  font-weight: 700; background: rgba(36,88,200,0.08); color: #2458c8; white-space: nowrap;
+}
+.pf-dd-empty { padding: 16px 14px; color: #8898c8; font-size: 12px; text-align: center; }
+
+/* ── Modale filtri ── */
+#pf-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(10, 20, 60, 0.38); z-index: 150;
+}
+#pf-overlay.open { display: block; }
+#pf-modal {
+  display: none; position: fixed; top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  background: #fff; border: 1px solid rgba(30, 60, 160, 0.14);
+  border-radius: 14px; box-shadow: 4px 4px 30px rgba(30, 60, 160, 0.25);
+  z-index: 160; width: 320px; max-width: 94vw;
+  max-height: 88vh; overflow-y: auto; font-family: 'Titillium Web', sans-serif;
+}
+#pf-modal.open { display: block; }
+
+.pfm-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 16px; border-bottom: 1px solid rgba(30, 60, 160, 0.1);
+}
+.pfm-header h3 { font-size: 13px; font-weight: 700; color: #2a3a68; }
+#pf-modal-close { background: none; border: none; cursor: pointer; color: #8898c8; font-size: 13px; padding: 4px; }
+#pf-modal-close:hover { color: #2a3a68; }
+
+.pfm-group { padding: 12px 16px; border-bottom: 1px solid rgba(30, 60, 160, 0.08); }
+.pfm-group label {
+  display: block; font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .06em; color: #8898c8; margin-bottom: 7px;
+}
+.pfm-group select {
+  width: 100%; padding: 7px 9px; background: #f4f6fb;
+  border: 1px solid rgba(30, 60, 160, 0.15); border-radius: 7px;
+  color: #2a3a68; font-size: 12.5px; outline: none; font-family: inherit;
+}
+.pfm-group select:focus { border-color: #2458c8; }
+
+.pfm-chipset { display: flex; flex-wrap: wrap; gap: 5px; }
+.pf-chip-opt {
+  display: inline-flex; align-items: center; gap: 5px;
+  background: #f4f6fb; border: 1px solid rgba(30, 60, 160, 0.15);
+  border-radius: 16px; padding: 4px 9px 4px 6px; cursor: pointer;
+  font-family: inherit; font-size: 11px; color: #4a5a88; transition: background .12s, border-color .12s;
+}
+.pf-chip-opt:hover { background: rgba(36, 88, 200, 0.08); }
+.pf-chip-opt.active { background: rgba(224, 120, 0, 0.12); border-color: rgba(224, 120, 0, 0.4); color: #b36b00; }
+.pf-chip-opt.empty { opacity: .35; pointer-events: none; }
+.pf-chip-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.pf-chip-cnt { font-size: 9.5px; font-weight: 700; color: #a0acd0; }
+.pf-chip-opt.active .pf-chip-cnt { color: #e07800; }
+
+.pfm-result {
+  padding: 10px 16px; font-size: 11.5px; font-weight: 600; color: #4a5a88;
+  background: rgba(36, 88, 200, 0.05); text-align: center;
+}
+
+.pfm-footer { display: flex; gap: 8px; padding: 13px 16px; flex-wrap: wrap; }
+#pf-zoom {
+  flex: 1 1 100%; padding: 8px; border: 1px solid rgba(30, 60, 160, 0.18);
+  border-radius: 7px; background: #f4f6fb; color: #2458c8;
+  font-size: 11.5px; font-weight: 600; cursor: pointer; font-family: inherit;
+}
+#pf-zoom:disabled { opacity: .35; cursor: default; }
+#pf-zoom:not(:disabled):hover { background: rgba(36, 88, 200, 0.12); }
+#pf-reset {
+  flex: 1; padding: 8px; border: 1px solid rgba(192, 48, 48, 0.3);
+  border-radius: 7px; background: rgba(192, 48, 48, 0.06); color: #b02020;
+  font-size: 11.5px; font-weight: 600; cursor: pointer; font-family: inherit;
+}
+#pf-reset:hover { background: rgba(192, 48, 48, 0.13); }
+
+/* ── Responsive ── */
+@media (max-width: 640px) {
+  #pf-bar { bottom: 34px; left: 8px; right: 8px; transform: none; width: auto; align-items: stretch; }
+  #pf-chips { justify-content: flex-start; }
+}

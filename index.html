@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>PEBA Palermo — Mappa accessibilità immobili comunali - Piano di Eliminazione delle Barriere Architettoniche</title>
+  <meta name="viewport" content="initial-scale=1,user-scalable=no,maximum-scale=1,width=device-width">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="description" content="Mappa del Piano di Eliminazione delle Barriere Architettoniche (PEBA) di Palermo: livello di accessibilità di sedi comunali, scuole, aree verdi e percorsi urbani rilevati.">
+  <meta name="keywords" content="Open Data, Sicilia, Palermo, PEBA, barriere architettoniche, accessibilità, disabilità">
+  <meta name="author" content="Giovan Battista Vitrano per OpenDataSicilia.it">
+  <meta name="robots" content="noindex,nofollow">
+  <link rel="stylesheet" href="css/maplibre-gl.css" />
+  <link rel="shortcut icon" href="img/favicon.ico"/>
+  <link rel="icon" href="img/favicon.png" type="image/png"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Titillium+Web:ital,wght@0,300;0,400;0,600;0,700;0,900;1,400&display=swap">
+  <link rel="stylesheet" href="css/map.css" />
+  <link rel="stylesheet" href="css/app.css" />
+  <link rel="stylesheet" href="css/filters.css" />
+
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="PEBA Palermo — Mappa accessibilità immobili comunali - Piano di Eliminazione delle Barriere Architettoniche">
+  <meta property="og:description" content="PalermoHub — Contenitore di mappe su Palermo realizzato da OpenDataSicilia.it">
+  
+  
+<!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-KHR1GHDRQS"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-KHR1GHDRQS');
+</script>
+</head>
+<body>
+
+<div id="map"></div>
+
+<div id="map-toolbar-wrap">
+<div id="map-toolbar">
+
+  <button class="tb-btn" id="tb-home" title="Vista iniziale">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+      <path d="M12 3L2 12h3v8h5v-5h4v5h5v-8h3L12 3z"/>
+    </svg>
+    <span class="tb-lbl">Home</span>
+  </button>
+
+  <div class="tb-sep"></div>
+
+  <div class="tb-group" id="tb-basemaps" role="group" aria-label="Cartografia di base">
+    <button class="tb-btn tb-radio active" data-basemap="osm" title="OpenStreetMap">OSM</button>
+    <button class="tb-btn tb-radio" data-basemap="satellite" title="Google Satellite">SAT</button>
+  </div>
+
+  <div id="tb-basemap-opacity-wrap" class="tb-basemap-opacity-wrap" hidden>
+    <input type="range" id="tb-basemap-opacity" min="0" max="100" value="100" title="Opacità mappa in primo piano">
+    <span id="tb-basemap-opacity-val" class="tb-si-val">100%</span>
+  </div>
+
+  <div class="tb-sep"></div>
+
+  <button class="tb-btn tb-toggle active" id="tb-vie" title="Mostra/nascondi rete stradale di sfondo">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M4 20 L10 4 M14 20 L20 4 M6 14 h12"/>
+    </svg>
+    <span class="tb-lbl">Vie</span>
+  </button>
+
+  <div class="tb-sep"></div>
+
+  <button class="tb-btn" id="tb-fullscreen" title="Schermo intero">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+      <path d="M3 3h6v2H5v4H3V3zm12 0h6v6h-2V5h-4V3zM3 15h2v4h4v2H3v-6zm16 4h-4v2h6v-6h-2v4z"/>
+    </svg>
+    <span class="tb-lbl">Full</span>
+  </button>
+
+</div>
+</div>
+
+<!-- ═══ LEGENDA ═══ -->
+<div id="map-legends">
+  <div class="map-legend visible" id="legend-gruppo">
+    <div class="map-legend-title" id="legend-gruppo-toggle"><span class="legend-toggle-arrow">▾</span>Gruppo <span class="map-legend-hint">(clic per filtrare)</span></div>
+    <div class="legend-rows">
+    <div class="legend-row" data-dim="gruppo" data-value="Percorso storico"><span class="legend-dot" style="background:#6d3ba0"></span><span class="legend-label">percorso storico</span><span class="legend-count"></span></div>
+    <div class="legend-row" data-dim="gruppo" data-value="Via cittadina"><span class="legend-dot" style="background:#3e548e"></span><span class="legend-label">via cittadina</span><span class="legend-count"></span></div>
+    <div class="legend-row" data-dim="gruppo" data-value="Scuola"><span class="legend-dot" style="background:#ef9ffc"></span><span class="legend-label">scuola</span><span class="legend-count"></span></div>
+    <div class="legend-row" data-dim="gruppo" data-value="Asilo"><span class="legend-dot" style="background:#c49bfc"></span><span class="legend-label">asilo</span><span class="legend-count"></span></div>
+    <div class="legend-row" data-dim="gruppo" data-value="Sede amministrativa/istituzionale"><span class="legend-dot" style="background:#a4d060"></span><span class="legend-label">sede amministrativa/istituzionale</span><span class="legend-count"></span></div>
+    <div class="legend-row" data-dim="gruppo" data-value="Area verde"><span class="legend-dot" style="background:#55af5e"></span><span class="legend-label">area verde</span><span class="legend-count"></span></div>
+    <div class="legend-row" data-dim="gruppo" data-value="Sito UNESCO (edificio)"><span class="legend-dot" style="background:#916a39"></span><span class="legend-label">sito UNESCO edificio</span><span class="legend-count"></span></div>
+    <div class="legend-row" data-dim="gruppo" data-value="Percorso UNESCO"><span class="legend-dot" style="background:#e6370c"></span><span class="legend-label">percorso UNESCO</span><span class="legend-count"></span></div>
+    <div class="legend-row" data-dim="gruppo" data-value="Piazza"><span class="legend-dot" style="background:#db8337"></span><span class="legend-label">piazza</span><span class="legend-count"></span></div>
+    <div class="legend-row" data-dim="gruppo" data-value="Museo"><span class="legend-dot" style="background:#e336b7"></span><span class="legend-label">museo</span><span class="legend-count"></span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ RICERCA & FILTRI ═══ -->
+<div id="pf-bar">
+  <div id="pf-chips"></div>
+  <div id="pf-searchbar">
+    <span class="pf-si">
+      <svg viewBox="0 0 24 24" fill="currentColor" width="15" height="15">
+        <path d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+      </svg>
+    </span>
+    <input type="text" id="pf-search-input" placeholder="Cerca immobile, indirizzo…" autocomplete="off">
+    <button id="pf-search-clear" style="display:none">&#x2715;</button>
+    <div class="pf-sep"></div>
+    <button id="pf-filter-btn" title="Filtri geografici e tematici">
+      <svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14">
+        <path d="M10 18h4v-2h-4v2zM3 6v2h18V6H3zm3 7h12v-2H6v2z"/>
+      </svg>
+      <span id="pf-filter-badge" style="display:none"></span>
+    </button>
+    <div id="pf-search-dd"></div>
+  </div>
+</div>
+
+<!-- ═══ MODALE FILTRI ═══ -->
+<div id="pf-overlay"></div>
+<div id="pf-modal">
+  <div class="pfm-header">
+    <h3>Filtri</h3>
+    <button id="pf-modal-close" title="Chiudi">&#x2715;</button>
+  </div>
+
+  <div class="pfm-group">
+    <label>Circoscrizione</label>
+    <select id="pf-circ"><option value="">— Tutte —</option></select>
+  </div>
+  <div class="pfm-group">
+    <label>Quartiere</label>
+    <select id="pf-quart"><option value="">— Tutti —</option></select>
+  </div>
+  <div class="pfm-group">
+    <label>UPL · Unità di Primo Livello</label>
+    <select id="pf-upl"><option value="">— Tutte —</option></select>
+  </div>
+
+  <div class="pfm-group">
+    <label>Gruppo</label>
+    <div class="pfm-chipset" id="pf-gruppo-set"></div>
+  </div>
+
+  <div class="pfm-group">
+    <label>Livello accessibilità</label>
+    <div class="pfm-chipset" id="pf-livello-set"></div>
+  </div>
+
+  <div id="pf-result-count" class="pfm-result">209 di 209 immobili</div>
+
+  <div class="pfm-footer">
+    <button id="pf-zoom" disabled>↗ Zoom sui risultati</button>
+    <button id="pf-reset">Ripristina filtri</button>
+  </div>
+</div>
+
+<!-- ═══ PANNELLO DESTRA ═══ -->
+<div id="rp-wrap">
+  <button id="rp-toggle" title="Immobile selezionato — apri/chiudi">
+    <svg id="rp-toggle-icon" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="15 18 9 12 15 6"/>
+    </svg>
+  </button>
+
+  <div id="right-panel">
+
+    <button id="rp-mobile-close" title="Chiudi pannello">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+
+    <!-- Vista iniziale: introduzione, mostrata finché non si clicca un punto -->
+    <div id="rp-gallery" class="rp-view">
+      <div class="rp-panel-header">
+        <div class="rp-panel-title">PEBA Palermo</div>
+        <div class="rp-panel-sub">Piano di Eliminazione delle Barriere Architettoniche</div>
+      </div>
+      <div class="panel-section rp-scroll">
+        <p class="panel-note">
+          Il <strong>P.E.B.A.</strong> (<strong>Piano per l'Eliminazione delle Barriere
+          Architettoniche</strong>) della Città di Palermo è uno <strong>strumento strategico,
+          strutturale e di programmazione urbanistica e sociale</strong> di medio-lungo periodo.
+          Il suo scopo principale è garantire l'accessibilità universale, abbattendo non solo gli
+          ostacoli fisici, ma anche le barriere senso-percettive, cognitive, localizzative e
+          digitali, ponendo al centro la persona e il diritto alla mobilità autonoma.
+        </p>
+        <p class="panel-note">
+          Introdotto in Italia da precisi obblighi normativi per edifici e spazi pubblici, a
+          Palermo il Piano fa principalmente quattro cose:
+        </p>
+        <ol class="panel-note" style="padding-left:18px; margin:0 0 10px;">
+          <li style="margin-bottom:8px;">
+            <strong>Effettua un censimento capillare</strong>: Mappa in modo sistematico le
+            criticità del territorio. L'analisi ha coperto <strong>81 immobili comunali</strong>
+            (suddivisi tra 26 asili, 28 scuole, 24 uffici e 3 musei), <strong>7 siti
+            UNESCO</strong> monumentali, la <strong>rete stradale e pedonale prioritaria</strong>
+            (115 percorsi tra vie storiche, cittadine e itinerari UNESCO), le piazze principali e
+            le aree verdi.
+          </li>
+          <li style="margin-bottom:8px;">
+            <strong>Valuta la gravità e definisce le priorità</strong>: Attraverso sopralluoghi
+            diretti e rilievi fotografici georeferenziati, a ogni barriera viene assegnato un
+            punteggio numerico (un "coefficiente di inaccessibilità"). Incrociando la gravità
+            della barriera con l'importanza dell'edificio o del percorso per la comunità, il
+            Piano genera una <strong>matrice di priorità</strong> per stabilire dove intervenire
+            con maggiore urgenza.
+          </li>
+          <li style="margin-bottom:8px;">
+            <strong>Pianifica gli interventi e i costi</strong>: Propone soluzioni tecniche tipo
+            (le schede progettuali) e quantifica l'impegno economico necessario per i lavori,
+            stimato per Palermo in circa <strong>112 milioni di euro</strong>. L'attuazione è
+            programmata in <strong>tre fasi temporali</strong> (da interventi urgenti a breve
+            termine su scuole e asili entro 3 anni, fino a rigenerazioni urbane complesse oltre i
+            7 anni).
+          </li>
+          <li>
+            <strong>Funge da strumento dinamico e vincolante</strong>: Non è un documento
+            cartaceo statico, ma si appoggia su un database georeferenziato (in formato
+            <code>.kmz</code> per Google Earth) che l'Amministrazione può aggiornare man mano che
+            i cantieri vengono completati. Inoltre, diventa una matrice di conformità
+            obbligatoria per qualsiasi futura opera di manutenzione, occupazione di suolo o
+            piano dei trasporti del Comune.
+          </li>
+        </ol>
+        <p class="panel-note">
+          In sintesi, il PEBA trasforma l'inclusione da concetto astratto a realtà fisica,
+          guidando gli investimenti pubblici per garantire che la dignità del movimento sia un
+          diritto per tutti — anziani, famiglie con passeggini, turisti e persone con
+          disabilità — e non un privilegio.
+        </p>
+        <p class="panel-note" style="margin-top:14px;">
+          <strong>Redattore del Piano (Progettista)</strong>: Arch. Irene Calabria<br>
+          <strong>Ing. Fabio Granata</strong>: Responsabile Unico del Progetto (R.U.P.)<br>
+          <strong>Ing. Marco Ciralli</strong>: Capo Area Responsabile della Pianificazione
+          Urbanistica del Comune di Palermo<br>
+          <strong>Prof. Arch. Maurizio Carta</strong>: Assessore all'Urbanistica e alla
+          Pianificazione
+        </p> <br>
+        <p class="panel-note">
+          Rielaborazione
+          <a href="https://opendatasicilia.it/" target="_blank" rel="noopener noreferrer"
+             title="OpenDataSicilia">@opendatasicilia</a>
+        </p>
+      </div>
+      <div class="panel-section" style="margin-top:auto;">
+        <details class="panel-note-warn-details">
+          <summary>Nota sulla qualità dei dati</summary>
+          <p class="panel-note panel-note-warn">
+            Schede, testi e foto sono stati estratti in automatico dai PDF originali del
+            rilievo con script Python (PyMuPDF) e assistenza di Claude (Anthropic), tramite
+            riconoscimento di pattern testuali e non lettura semantica; le coordinate sono state
+            ricavate per geocodifica degli indirizzi. Possono quindi essere presenti errori,
+            campi mancanti o posizionamenti imprecisi sulla mappa.
+          </p>
+        </details>
+      </div>
+    </div>
+
+    <!-- Vista: immobile selezionato -->
+    <div id="rp-punto" class="rp-view" style="display:none;">
+      <div class="rp-detail-topbar">
+        <button id="rp-punto-back">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+          Indietro
+        </button>
+        <div class="rp-detail-name-wrap">
+          <span id="rp-punto-icon">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          </span>
+          <span id="rp-punto-title">Elemento selezionato</span>
+        </div>
+        <span id="rp-punto-coords" class="rp-punto-coords"></span>
+      </div>
+
+      <div id="rp-punto-body">
+        <!-- contenuto renderizzato via map.js -->
+      </div>
+    </div><!-- /rp-punto -->
+
+  </div>
+</div>
+
+<!-- ═══ INFO PANEL (basso: crediti, fonti, metodologia) ═══ -->
+<div id="info-panel">
+  <div id="panel-handle" onclick="panelToggle()" title="Info, fonti e crediti">
+    <svg id="panel-handle-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="18 15 12 9 6 15"></polyline>
+    </svg>
+  </div>
+  <div id="panel-body">
+    <div class="rp-panel-header">
+      <div class="rp-panel-title">Info e crediti</div>
+      <div class="rp-panel-sub">Fonti dati, metodologia, limiti</div>
+    </div>
+    <div id="panel-nav">
+      <button class="ptab active" data-tab="info">Info</button>
+      <button class="ptab" data-tab="guida">Guida</button>
+      <button class="ptab" data-tab="metodologia">Metodologia</button>
+    </div>
+    <div class="tab-pane active" data-tab="info">
+      <div class="panel-section">
+        <h3>Cos'è questa mappa</h3>
+        <p class="panel-note">
+          Il PEBA (Piano di Eliminazione delle Barriere Architettoniche) è lo strumento di
+          pianificazione con cui il Comune censisce e programma l'abbattimento delle barriere
+          architettoniche negli edifici e negli spazi pubblici. Questa mappa mostra gli esiti del
+          sopralluogo su ciascun immobile/percorso rilevato.
+        </p>
+      </div>
+      <div class="panel-section">
+        <h3>Cosa mostra</h3>
+        <p class="panel-note">
+          209 punti (sedi amministrative, scuole, asili, aree verdi, percorsi e siti UNESCO,
+          piazze, musei) con livello di accessibilità, punteggio del rilievo, criticità
+          riscontrate e foto del sopralluogo. La rete stradale (sfondo grigio) è mostrata come
+          riferimento territoriale.
+        </p>
+      </div>
+      <div class="panel-section">
+        <h3>Fonti dati</h3>
+        <p class="panel-note">
+          Rilievo PEBA — Comune di Palermo. Rete stradale: estratto OpenStreetMap, elaborazione
+          PalermoHub. Delibera di Giunta Comunale n° 272 del 18/07/2026 — Fine pubblicazione
+          03/09/2026.
+        </p>
+        <img src="img/delibera.jpg" alt="Delibera di Giunta Comunale n° 272 del 18/07/2026" class="delibera-thumb" onclick="openPhotoModal(['img/delibera.jpg'], 0)" />
+      </div>
+      <div class="panel-section">
+        <h3>Crediti</h3>
+        <p class="panel-note">
+          PalermoHub / OpenDataSicilia.it
+        </p>
+      </div>
+      <div class="panel-section">
+        <h3>Sviluppo</h3>
+        <p class="panel-note">
+          Web app progettata e sviluppata da
+          <a href="https://opendatasicilia.it/" target="_blank" rel="noopener noreferrer" title="OpenDataSicilia">@opendatasicilia</a>
+          in collaborazione con
+          <a href="https://www.anthropic.com/claude" target="_blank" rel="noopener noreferrer" title="Claude (Anthropic)">Claude AI (Anthropic)</a>,
+          che ha affiancato le scelte architetturali, l'ottimizzazione del codice e lo sviluppo
+          delle funzionalità di visualizzazione geospaziale.
+        </p>
+      </div>
+      <div class="panel-section">
+        <h3>Disclaimer</h3>
+        <p class="panel-note">
+          I contenuti presenti in questa sezione, compresi testi ed elementi grafici, hanno
+          carattere puramente informativo e divulgativo. Non sono presenti dati personali o
+          sensibili. Si precisa che questi materiali non costituiscono documenti ufficiali né
+          hanno alcun valore legale. Per consultare la documentazione ufficiale e legalmente
+          vincolante, si prega di fare riferimento agli atti definitivi allegati alle relative
+          deliberazioni degli organi competenti.
+        </p>
+      </div>
+    </div>
+    <div class="tab-pane" data-tab="guida">
+      <div class="panel-section">
+        <h3>Cercare un immobile</h3>
+        <p class="panel-note">
+          Usa la barra di ricerca in alto per trovare un immobile per nome o indirizzo. Digitando
+          alcuni caratteri compare un elenco di risultati: clicca su una voce per centrare la
+          mappa sul punto e aprire la sua scheda nel pannello destro.
+        </p>
+        <img src="img/guida/ricerca.png" alt="Barra di ricerca con risultati" class="guida-shot" onclick="openPhotoModal(['img/guida/ricerca.png'], 0)" />
+      </div>
+      <div class="panel-section">
+        <h3>Filtri geografici e tematici</h3>
+        <p class="panel-note">
+          L'icona a imbuto accanto alla ricerca apre il pannello filtri: circoscrizione,
+          quartiere, UPL (Unità di Primo Livello) e gruppo tematico. I filtri sono a cascata —
+          scegliendo una circoscrizione, l'elenco dei quartieri si restringe di conseguenza. Un
+          pallino sull'icona indica che sono attivi uno o più filtri.
+        </p>
+        <img src="img/guida/filtri.png" alt="Pannello filtri geografici e tematici" class="guida-shot" onclick="openPhotoModal(['img/guida/filtri.png'], 0)" />
+      </div>
+      <div class="panel-section">
+        <h3>Legenda e filtro rapido per gruppo</h3>
+        <p class="panel-note">
+          In basso a sinistra sulla mappa c'è la legenda dei gruppi, ciascuno con un colore
+          proprio. Clicca su una voce della legenda per mostrare/nascondere quel gruppo
+          direttamente sulla mappa, senza passare dal pannello filtri. Su schermi piccoli la
+          legenda è comprimibile: tocca il titolo per aprirla o chiuderla.
+        </p>
+        <img src="img/guida/legenda.png" alt="Legenda dei gruppi sulla mappa" class="guida-shot" onclick="openPhotoModal(['img/guida/legenda.png'], 0)" />
+      </div>
+      <div class="panel-section">
+        <h3>Navigare la mappa</h3>
+        <p class="panel-note">
+          Trascina per spostarti, usa la rotellina o i pulsanti +/− per zoomare. Il pulsante con
+          l'icona "casa" nella toolbar riporta la mappa alla vista iniziale. Ogni punto colorato
+          rappresenta un immobile rilevato; passandoci sopra compare un'anteprima con il codice
+          identificativo, mentre un clic apre la scheda completa.
+        </p>
+        <img src="img/guida/mappa.png" alt="Vista generale della mappa con marcatori" class="guida-shot" onclick="openPhotoModal(['img/guida/mappa.png'], 0)" />
+      </div>
+      <div class="panel-section">
+        <h3>Scheda immobile</h3>
+        <p class="panel-note">
+          Cliccando su un punto si apre, nel pannello destro, la scheda dell'immobile: anagrafica
+          (nome, indirizzo, gruppo, circoscrizione, quartiere, UPL), livello di accessibilità e
+          punteggio, le criticità riscontrate durante il sopralluogo e, in fondo, la miniatura di
+          tutte le foto scattate. Il link "Indietro" in alto torna alla vista con la lista/mappa.
+        </p>
+        <img src="img/guida/scheda.png" alt="Scheda immobile con anagrafica, accessibilità e miniature foto" class="guida-shot" onclick="openPhotoModal(['img/guida/scheda.png'], 0)" />
+      </div>
+      <div class="panel-section">
+        <h3>Galleria foto a schermo intero</h3>
+        <p class="panel-note">
+          Cliccando su una miniatura nella scheda, la foto si apre a schermo intero. Usa le
+          frecce ‹ › (o le frecce della tastiera) per scorrere tra tutti gli scatti del
+          sopralluogo, i pulsanti ⟲ ⟳ (o i tasti [ e ]) per ruotarli di 90°, il contatore in alto
+          per sapere a che punto sei, e la ✕ per chiudere e tornare alla scheda.
+        </p>
+        <img src="img/guida/galleria.png" alt="Galleria foto a schermo intero con frecce di navigazione" class="guida-shot" onclick="openPhotoModal(['img/guida/galleria.png'], 0)" />
+      </div>
+      <div class="panel-section">
+        <h3>Questo pannello</h3>
+        <p class="panel-note">
+          Il pannello in basso (dove ti trovi ora) si apre e chiude toccando la maniglia con la
+          freccia. Contiene tre schede: Info (cos'è la mappa e le fonti dati), Guida (questa
+          pagina) e Metodologia (come sono stati estratti i dati dai PDF originali).
+        </p>
+      </div>
+    </div>
+    <div class="tab-pane" data-tab="metodologia">
+      <div class="panel-section">
+        <h3>Cosa sono i documenti di partenza</h3>
+        <p class="panel-note">
+          Il punto di partenza sono 25 file PDF. Contengono 88 schede tecniche sull'accessibilità.
+          Di queste, 81 riguardano edifici comunali. Le altre 7 riguardano siti UNESCO. Ogni
+          scheda occupa due pagine con una struttura fissa e ripetuta. Questa regolarità ha reso
+          possibile un'estrazione automatica invece di una trascrizione manuale.
+        </p>
+      </div>
+      <div class="panel-section">
+        <h3>Lo strumento usato</h3>
+        <p class="panel-note">
+          Per leggere il contenuto dei PDF è stata usata la libreria Python chiamata PyMuPDF.
+          Questa libreria permette di estrarre sia il testo sia le immagini incorporate nelle
+          pagine, mantenendo l'informazione sulla loro posizione. Serve proprio questo per un
+          documento con un layout a griglia fisso, dove ogni campo si trova sempre più o meno
+          nello stesso punto della pagina.
+        </p>
+      </div>
+      <div class="panel-section">
+        <h3>Come funziona l'estrazione del testo</h3>
+        <p class="panel-note">
+          Uno script analizza ogni coppia di pagine e riconosce i campi grazie a etichette
+          ricorrenti, per esempio l'indirizzo, il tipo di edificio, la circoscrizione, le note
+          sulla accessibilità. Il testo grezzo viene ripulito da interruzioni di riga inutili e da
+          spazi doppi. In alcuni punti la formattazione originale era irregolare, quindi lo script
+          ha richiesto più correzioni successive per gestire casi particolari senza rompere
+          l'analisi degli altri.
+        </p>
+      </div>
+      <div class="panel-section">
+        <h3>Come funziona l'estrazione delle immagini</h3>
+        <p class="panel-note">
+          Ogni scheda include quasi sempre una foto aerea o una foto dell'edificio. Le immagini
+          vengono estratte in formato originale e salvate in cartelle separate, una per ogni
+          scheda, così restano collegate al record corrispondente. In totale sono state recuperate
+          2346 foto da tutto l'insieme dei PDF analizzati, un numero molto più alto delle sole 88
+          schede iniziali perché molte pagine contenevano più immagini o riguardavano vie e
+          percorsi con più fotografie ciascuno.
+        </p>
+      </div>
+      <div class="panel-section">
+        <h3>L'espansione da edifici a spazi pubblici</h3>
+        <p class="panel-note">
+          Con un secondo giro sui PDF, il numero di schede è salito da 88 a 229. Alle schede sugli
+          edifici si sono aggiunte quelle su piazze, vie, percorsi storici legati ai siti UNESCO e
+          aree verdi. Anche qui la logica è la stessa: individuare la struttura ricorrente delle
+          pagine e ripetere l'estrazione con le stesse regole, adattate al nuovo tipo di contenuto.
+        </p>
+      </div>
+      <div class="panel-section">
+        <h3>L'arricchimento con la geolocalizzazione</h3>
+        <p class="panel-note">
+          I dati estratti non contenevano coordinate geografiche. Per ottenerle è stato usato il
+          servizio di geocodifica di OpenStreetMap, interrogato a partire dagli indirizzi
+          testuali presenti nelle schede. Il procedimento ha funzionato per la maggior parte dei
+          casi, ma non per tutti: alcuni indirizzi erano troppo generici o scritti in modo non
+          standard per essere riconosciuti automaticamente. In quei casi le coordinate sono state
+          stimate a mano, incrociando altre fonti.
+        </p>
+      </div>
+      <div class="panel-section">
+        <h3>L'assegnazione alla circoscrizione</h3>
+        <p class="panel-note">
+          Le coordinate ottenute sono servite anche per un altro passaggio: capire a quale
+          circoscrizione cittadina appartiene ciascuna scheda. Questo è stato fatto costruendo una
+          mappa di corrispondenza tra quartieri e circoscrizioni, e applicandola ai punti
+          geocodificati. Su 229 schede totali, 227 sono state assegnate con successo, la maggior
+          parte tramite geocodifica automatica e una piccola parte con stima manuale.
+        </p>
+      </div>
+      <div class="panel-section">
+        <h3>L'output finale</h3>
+        <p class="panel-note">
+          Tutti i dati raccolti sono stati organizzati in più formati. Ci sono un file CSV
+          completo con tutti i campi, un file JSON equivalente, e una pagina HTML interattiva che
+          permette di consultare le schede, filtrarle per circoscrizione e vedere le foto in una
+          galleria a scorrimento. La pagina include anche una mappa costruita con tessere
+          scaricate da OpenStreetMap, sopra cui sono stati disegnati dei marcatori per ogni scheda
+          geolocalizzata, usando una proiezione Web Mercator per convertire le coordinate in
+          pixel sulla mappa.
+        </p>
+      </div>
+      <div class="panel-section">
+        <h3>Un limite da tenere presente</h3>
+        <p class="panel-note">
+          Il metodo si basa sul riconoscimento di pattern testuali e posizionali nei PDF, non su
+          una lettura semantica del contenuto. Se un domani arrivassero PDF con un layout diverso
+          da quello analizzato, lo script andrebbe adattato di nuovo. Per questo motivo
+          l'estrazione non è del tutto generica, ma resta legata alla struttura specifica di
+          questi documenti.
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Scala metrica -->
+<div id="map-scale">
+  <div id="map-scale-bar"></div>
+  <span id="map-scale-label"></span>
+</div>
+
+<!-- Logo OpenDataSicilia -->
+<a id="ods-logo" href="https://opendatasicilia.it/" target="_blank" rel="noopener noreferrer" title="OpenDataSicilia — comunità aperta che promuove la cultura degli open data in Sicilia">
+  <img src="img/opendatasicilia.png" alt="OpenDataSicilia" />
+</a>
+
+<!-- Attribuzioni -->
+<div id="attrib-wrap">
+  <button id="attrib-btn" title="Attribuzioni" aria-expanded="false" aria-controls="attrib-panel"></button>
+  <div id="attrib-panel" hidden>
+    <span id="attrib-text"></span>
+  </div>
+</div>
+
+<!-- Modale galleria foto sopralluogo -->
+<div id="photo-modal" class="photo-modal" hidden>
+  <button id="photo-modal-close" class="photo-modal-close" title="Chiudi" aria-label="Chiudi">✕</button>
+  <button id="photo-modal-prev" class="photo-modal-nav photo-modal-prev" title="Precedente" aria-label="Foto precedente">‹</button>
+  <div class="photo-modal-stage">
+    <img id="photo-modal-img" class="photo-modal-img" alt="" />
+  </div>
+  <button id="photo-modal-next" class="photo-modal-nav photo-modal-next" title="Successiva" aria-label="Foto successiva">›</button>
+  <div class="photo-modal-rotate-group">
+    <button id="photo-modal-rotate-left" class="photo-modal-rotate" title="Ruota a sinistra" aria-label="Ruota a sinistra">⟲</button>
+    <button id="photo-modal-rotate-right" class="photo-modal-rotate" title="Ruota a destra" aria-label="Ruota a destra">⟳</button>
+  </div>
+  <div id="photo-modal-counter" class="photo-modal-counter"></div>
+  <div id="photo-modal-thumbs" class="photo-modal-thumbs"></div>
+</div>
+
+<script src="js/maplibre-gl.js"></script>
+<script src="js/map.js"></script>
+<script src="js/panel.js"></script>
+<script src="js/filters.js"></script>
+</body>
+</html>

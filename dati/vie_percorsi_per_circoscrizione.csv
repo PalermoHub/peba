@@ -1,0 +1,142 @@
+﻿Circoscrizione;Fonte;Codice;Tipo;Nome/Localizzazione;Punteggio;Livello accessibilita
+I;OSM;AV_10;Area verde;VILLA GARIBALDI, VIALE DELLA LIBERTÀ;46;Parzialmente accessibile
+I;OSM;AV_11;Area verde;PARCO PIERSANTI MATTARELLA, VIALE DELLA LIBERTÀ;41;Parzialmente accessibile
+I;OSM;AV_19;Area verde;VILLA BONANNO, PIAZZA DELLA VITTORIA;38;Accessibile
+I;OSM;AV_21;Area verde;GIARDINO GARIBALDI, PIAZZA MARINA;44;Parzialmente accessibile
+I;stima;AV_22;Area verde;FORO ITALICO, VIA UMBERTO I – S.S. 113;45;Parzialmente accessibile
+I;OSM;AV_23;Area verde;VILLA GIULIA, VIA LINCOLN;46;Parzialmente accessibile
+I;OSM;VU_03;Percorso UNESCO;CORSO VITTORIO EMANUELE;47;Parzialmente accessibile
+I;OSM;VU_04;Percorso UNESCO;VIA MAQUEDA;41;Parzialmente accessibile
+I;OSM;VS_01;Percorso storico;CORSO VITTORIO EMANUELE;46;Parzialmente accessibile
+I;OSM;VS_05;Percorso storico;VIA MAGIONE - VIA DELLA PACE - VIA DELLO SPASIMO - VIA SANTA TERESA - VIA TORREMUZZA;53;Parzialmente accessibile
+I;OSM;VS_06;Percorso storico;SALITA MURA DELLE CATTIVE - VIA ALLORO - VIA QUATTRO APRILE - PIAZZA MARINA;53;Parzialmente accessibile
+I;OSM;VS_07;Percorso storico;VIA PORTO SALVO - PIAZZA TARZANÀ - PIAZZA FONDERIA - VIA GIOVANNI MELI;53;Parzialmente accessibile
+I;stima;VS_08;Percorso storico;VIA BAMBOLAI - LARGO DEI CAVALIERI DI MALTA - VIA CASTELLO - VIA FRATELLI ORLANDO;57;Parzialmente accessibile
+I;OSM;VS_09;Percorso storico;VIA ROMA;41;Parzialmente accessibile
+I;OSM;VS_23;Percorso storico;VIA CORRADO AVOLIO - VIA MICHELE DEL GIUDICE - VIA ANTONIO MONGITORE - VIA LAGUMINA FRATELLI - VIA;54;Parzialmente accessibile
+I;OSM;VS_25;Percorso storico;VIA NAPOLI;44;Parzialmente accessibile
+I;OSM;VS_26;Percorso storico;VIA MAQUEDA - VIA RUGGERO SETTIMO;46;Parzialmente accessibile
+I;OSM;VS_27;Percorso storico;DISCESA DEI GIOVENCHI - VIA PANNERIA - VIA JUDICA - VIA GIOIAMIA;65;Parzialmente inaccessibile
+I;OSM;VS_28;Percorso storico;VIA MATTEO BONELLO - VIA PAPIRETO - PIAZZA DELLA MEMORIA - VIA NICOLÒ TURRISI;51;Parzialmente accessibile
+I;OSM;P_03;Piazza;PIAZZA GIUSEPPE VERDI;31;Accessibile
+I;OSM;P_04;Piazza;PIAZZA SAN DOMENICO;33;Accessibile
+II;OSM;VU_06;Percorso UNESCO;CORSO DEI MILLE;46;Parzialmente accessibile
+II;stima;VS_02;Percorso storico;VIA UMBERTO I (S.S. 113);42;Parzialmente accessibile
+II;stima;VS_03;Percorso storico;VIA LINCOLN;43;Parzialmente accessibile
+II;OSM;VS_04;Percorso storico;CORSO DEI MILLE - VIA GARIBALDI - VIA CANTAVESPRI - VIA CAGLIARI - VIA LIVORNO - VIA CALDERAI;56;Parzialmente accessibile
+II;OSM;VS_20;Percorso storico;CORSO DEI MILLE - VIA BRANCACCIO - VIA GERMANESE - VIA BRANCACCIO - VIA CONTE FEDERICO;56;Parzialmente accessibile
+II;OSM;VS_22;Percorso storico;VIA  CIACULLI -CORSO DEI MILLE CROCEVERDE;65;Parzialmente inaccessibile
+II;OSM;VC_04;Via cittadina;VIA BRANCACCIO – VIA SAN GIOVANNI DI DIO – VIALE AMEDEO D’AOSTA;46;Parzialmente accessibile
+II;stima;VC_05;Via cittadina;VIA DEI PICCIOTTI – VIA SALVATORE CAPPELLO – VIA MESSINA MARINE;37;Accessibile
+II;OSM;VC_09;Via cittadina;VIA XXVII MAGGIO – VIA MESSINA MARINE;37;Accessibile
+II;OSM;VC_50;Via cittadina;VIA SAN CIRO;44;Parzialmente accessibile
+II;OSM;VC_51;Via cittadina;VIA GIAN FILIPPO INGRASSIA;45;Parzialmente accessibile
+III;OSM;VU_05;Percorso UNESCO;PIAZZA GIULIO CESARE – VIA LINCOLN;47;Parzialmente accessibile
+III;OSM;VS_14;Percorso storico;VIA VINCENZO ERRANTE - VIA ORETO;47;Parzialmente accessibile
+III;stima;VS_15;Percorso storico;CORSO TUKORI;53;Parzialmente accessibile
+III;OSM;VS_19;Percorso storico;VIA ORETO - VIA PIETRO SPICA - VIA GIOVANNI CAMPISI - VIA BUONRIPOSO - VIA GIUSEPPE SERGI;51;Parzialmente accessibile
+III;stima;VC_06;Via cittadina;VIALE EMIRO GIAFAR – VIA PADRE GIUSEPPE PUGLISI;53;Parzialmente accessibile
+III;stima;VC_19;Via cittadina;VIA DEL MANDERINO – VIA FILISTO – VIA PEGASO;54;Parzialmente accessibile
+III;OSM;VC_33;Via cittadina;VIA GIORGIO ARCOLEO - VIA PIETRO D'ARAGONA – VIA DELLE CLINICHE – VIA LIBORIO GIUFFRÈ – VIA DEL VESPRO –;51;Parzialmente accessibile
+III;OSM;VC_34;Via cittadina;VIA ORETO – VIA BERGAMO – VIA ROCCO JEMMA;48;Parzialmente accessibile
+III;OSM;VC_35;Via cittadina;VIA FRANCESCO LA COLLA – VIA ORETO – VIA ANTONIO TANTILLO;38;Accessibile
+III;OSM;VC_47;Via cittadina;VIA ROSSA GUIDO – VIA DAMIANO LO GRECO – VIA DEL BASSOTTO – VIADOTTO CARLO PERRIER – VIA DELL’ORSA;46;Parzialmente accessibile
+III;OSM;VC_48;Via cittadina;VIA DELL’ORSA MAGGIORE – VIA S. FILIPPO – VIA DELL’AIRONE – VIA GIUSEPPE MANIACI;46;Parzialmente accessibile
+III;OSM;VC_52;Via cittadina;VIA PAOLO ORSI – VIA GIUSEPPE PARATORE;38;Accessibile
+IV;OSM;AV_18;Area verde;GIARDINO, PIAZZA INDIPENDENZA;45;Parzialmente accessibile
+IV;OSM;AV_20;Area verde;GIARDINO, VIA ERNESTO BASILE;44;Parzialmente accessibile
+IV;OSM;VU_02;Percorso UNESCO;CORSO CALATAFIMI – CORSO VITTORIO EMANUELE – PIAZZA DELLA VITTORIA – VIA DEL BASTIONE -;50;Parzialmente accessibile
+IV;OSM;VS_16;Percorso storico;CORSO RE RUGGERO;48;Parzialmente accessibile
+IV;OSM;VS_17;Percorso storico;PIAZZA INDIPENDENZA;42;Parzialmente accessibile
+IV;OSM;VS_18;Percorso storico;VIA GIOVANNI ARGENTO - VIA ENRICO TOTI - PIAZZA MONTEGRAPPA;54;Parzialmente accessibile
+IV;OSM;VS_38;Percorso storico;CORSO CALATAFIMI;40;Parzialmente accessibile
+IV;stima;VS_39;Percorso storico;CORSO PIETRO PISANI;40;Parzialmente accessibile
+IV;OSM;VS_40;Percorso storico;VIA PINDEMONTE;44;Parzialmente accessibile
+IV;OSM;VS_41;Percorso storico;VIA GIUSEPPE PITRE’;40;Parzialmente accessibile
+IV;OSM;VC_01;Via cittadina;VIA PORRAZZI - VIA RAFFAELE LA VALLE - VIA PALMERINO - VIA AGOSTINO CATALANO - CORSO PIETRO PISANI;42;Parzialmente accessibile
+IV;OSM;VC_02;Via cittadina;CORSO CALATAFIMI;34;Accessibile
+IV;OSM;VC_03;Via cittadina;VIA PARUTA;44;Parzialmente accessibile
+V;OSM;AV_06;Area verde;GIARDINO PUBBLICO, VIA TINDARI;54;Parzialmente accessibile
+V;OSM;AV_07;Area verde;GIARDINO PUBBLICO, VIALE MICHELANGELO;38;Accessibile
+V;OSM;AV_12;Area verde;PARCO NAZARIO SAURO, VIA NAZARIO SAURO;45;Parzialmente accessibile
+V;OSM;AV_16;Area verde;GIARDINO DELLA ZISA;47;Parzialmente accessibile
+V;OSM;VU_01;Percorso UNESCO;VIA MICHELE PIAZZA – VIA SILVIO PELLICO – VIA ZISA – PIAZZA INGASTONE – VIA COLONNA ROTTA;50;Parzialmente accessibile
+V;OSM;VS_35;Percorso storico;VIA NOCE – VIA GIUSEPPE EVANGELISTA DI BLASI;43;Parzialmente accessibile
+V;OSM;VS_36;Percorso storico;VIA RUGGERONE DA PALERMO – VIA TOMMASO CALOJRA – FONDO LA MANNA;53;Parzialmente accessibile
+V;OSM;VS_37;Percorso storico;VIA DOMENICO LANCIA DI BROLO;50;Parzialmente accessibile
+V;OSM;VS_42;Percorso storico;VIA CIPRESSI – VIA REGINA BIANCA;58;Parzialmente accessibile
+V;OSM;VS_43;Percorso storico;VIA DOGALI – VIA ROCCAZZO;37;Accessibile
+V;OSM;VS_44;Percorso storico;VIA UDITORE – PIAZZA CHIESA SANT’ALFONSO DEI LIGUORI – VIA MAMMANA;41;Parzialmente accessibile
+V;stima;VC_23;Via cittadina;VIALE DELLE ROSE;42;Parzialmente accessibile
+V;OSM;VC_27;Via cittadina;VIA MICHELE PIAZZA – VIA EUGENIO L’EMIRO – VIA MICHELE SCOTO – VIA NINA SICILIANA – VIA PERPIGNANO – VIA;49;Parzialmente accessibile
+V;OSM;VC_28;Via cittadina;VIA PERPIGNANO – VIA GIROLAMO SAVONAROLA – VIA G. EVANGELISTA DI BLASI;56;Parzialmente accessibile
+V;stima;VC_29;Via cittadina;VIA LEONARDO DA VINCI – VIA NOTARBARTOLO – VIALE DUCA DELLA VERDURA;43;Parzialmente accessibile
+V;OSM;VC_30;Via cittadina;VIA UDITORE - VIA NAZARIO SAURO;48;Parzialmente accessibile
+V;OSM;VC_31;Via cittadina;VIA DOMENICO LANCIA DI BROLO - VIA ENRICO FERMI – VIA ANTONIO PACINOTTI – VIA GALILEO GALILEI – VIA;42;Parzialmente accessibile
+V;OSM;VC_32;Via cittadina;VIA FILIPPO PARLATORE – VIA MALASPINA – VIA GEN. ANTONIO CANTORE;41;Parzialmente accessibile
+VI;OSM;AV_03;Area verde;GIARDINO PIAZZA NISCEMI, PIAZZA NISCEMI;42;Parzialmente accessibile
+VI;OSM;VS_51;Percorso storico;VIA GIUSEPPE PREZZOLINI – VIA NUOVA – VIA DEI QUARTIERI – VIALE DUCA DEGLI ABBRUZZI – VIA MATER DOLOROSA;44;Parzialmente accessibile
+VI;OSM;VC_42;Via cittadina;VIALE FRANCIA – VIA UGO LA MALFA;44;Parzialmente accessibile
+VI;OSM;VC_43;Via cittadina;VIA BELGIO – VIA MONTE SAN CALOGERO;39;Parzialmente accessibile
+VI;OSM;VC_45;Via cittadina;VIA SALVATORE ALDISIO – VIA RESUTTANA – VIA CADUTI SENZA CROCE;35;Accessibile
+VI;OSM;VC_46;Via cittadina;VIA ALCIDE DE GASPERI – VIALE DEL FANTE;34;Accessibile
+VII;OSM;AV_01;Area verde;PARCO D’URSO ERMELINDA, VIA GINO ZAPPA (NON VALUTABILE);;Non valutabile
+VII;stima;AV_02;Area verde;GIARDINO PALAZZINA CINESE, VIALE DUCA DEGLI ABRUZZI;39;Parzialmente accessibile
+VII;OSM;AV_05;Area verde;PIAZZA BENVENUTO CELLINI;47;Parzialmente accessibile
+VII;OSM;VS_45;Percorso storico;VIA CRUILLAS – VIA TRABUCCO;64;Parzialmente inaccessibile
+VII;OSM;VS_48;Percorso storico;VIA PAPA SERGIO I (S.S.113);35;Accessibile
+VII;OSM;VS_49;Percorso storico;VIA PAPA GREGORIO MAGNO – VIA SAN VINCENZO DÈ PAOLI;41;Parzialmente accessibile
+VII;OSM;VS_50;Percorso storico;VIA BORDONARO (S.S.113) – VIA NOSTRA SIGNORA DEL ROTOLO;48;Parzialmente accessibile
+VII;OSM;VS_52;Percorso storico;VIALE DELLA RESURREZIONE;48;Parzialmente accessibile
+VII;OSM;VS_53;Percorso storico;VIA PARTANNA MONDELLO (S.S.113) - VIA LORENZO IANDOLINO (S.S.113) - VIA CARBONE (S.S.113) - VIALE;44;Parzialmente accessibile
+VII;OSM;VS_54;Percorso storico;VIA PRINCIPE DI SCALEA (S.S.113) - VIA GLAUCO (S.S.113) - VIA ANADIOMENE (S.S.113);42;Parzialmente accessibile
+VII;OSM;VS_55;Percorso storico;VIALE REGINA ELENA;41;Parzialmente accessibile
+VII;OSM;VS_56;Percorso storico;VIA TOMMASO NATALE;41;Parzialmente accessibile
+VII;OSM;VS_57;Percorso storico;PIAZZA SFERRACAVALLO (S.S.113) - VIA TORRETTA (S.S.113) - VIA CATULLO;50;Parzialmente accessibile
+VII;OSM;VC_10;Via cittadina;VIA MESSINA MARINE – VIA ANTONINO LAUDICINA;46;Parzialmente accessibile
+VII;OSM;VC_11;Via cittadina;VIA PAPA SERGIO I;38;Accessibile
+VII;OSM;VC_12;Via cittadina;VIA VERGINE MARIA;47;Parzialmente accessibile
+VII;OSM;VC_16;Via cittadina;VIA SMITH ADAMO - VIA FAUSTO COPPI (NON VALUTABILE);;Non valutabile
+VII;OSM;VC_17;Via cittadina;VIA FRANCESCO DE GOBBIS - VIA AGESIA DI SIRACUSA (NON VALUTABILE);;Non valutabile
+VII;OSM;VC_18;Via cittadina;VIA ELEONORA DUSE – VIA PADRE ROSARIO DA PARTANNA;51;Parzialmente accessibile
+VII;OSM;VC_20;Via cittadina;PIAZZA MANDORLE – VIA PARTANNA MONDELLO – VIA EMILIO SALGARI;51;Parzialmente accessibile
+VII;OSM;VC_21;Via cittadina;VIA TETI – VIALE PRINCIPE DI SCALEA;41;Parzialmente accessibile
+VII;stima;VC_22;Via cittadina;VIALE PRINCIPE DI SCALEA;44;Parzialmente accessibile
+VII;OSM;VC_24;Via cittadina;VIALE IRIS;48;Parzialmente accessibile
+VII;OSM;VC_25;Via cittadina;VIALE MARGHERITA DI SAVOIA;36;Accessibile
+VII;OSM;VC_26;Via cittadina;VIA LUIGI BARBA – VIA BARISANO DA TRANI – VIA FILIPPO PALADINI – VIALE MICHELANGELO – VIA ACIREALE – VIA;46;Parzialmente accessibile
+VIII;OSM;AV_04;Area verde;GIARDINO DELLE ROSE, VIA BRIGATA VERONA;33;Accessibile
+VIII;stima;AV_08;Area verde;PIAZZA ALBERIGO GENTILI;39;Parzialmente accessibile
+VIII;OSM;AV_09;Area verde;VILLA TRABIA, VIA SALINAS;40;Parzialmente accessibile
+VIII;OSM;AV_13;Area verde;GIARDINO, PIAZZA LOLLI;39;Parzialmente accessibile
+VIII;OSM;AV_14;Area verde;GIARDINO, PIAZZA IGNAZIO FLORIO;42;Parzialmente accessibile
+VIII;OSM;AV_15;Area verde;GIARDINO, PIAZZA SANT’OLIVA;46;Parzialmente accessibile
+VIII;stima;VS_10;Percorso storico;VIA CAVOUR - VIA FILIPPO PATTI;44;Parzialmente accessibile
+VIII;OSM;VS_11;Percorso storico;VIA PRINCIPE DI BELMONTE;42;Parzialmente accessibile
+VIII;OSM;VS_12;Percorso storico;VIA EMERICO AMARI;44;Parzialmente accessibile
+VIII;OSM;VS_13;Percorso storico;VIA PRINCIPE DI SCORDIA – VIA DOMENICO SCINÀ;49;Parzialmente accessibile
+VIII;OSM;VS_29;Percorso storico;VIA VOLTURNO - VIA SALESIO BALSANO - VIA VILLA FILIPPINA;54;Parzialmente accessibile
+VIII;OSM;VS_30;Percorso storico;VIA PIGNATELLI ARAGONA;44;Parzialmente accessibile
+VIII;OSM;VS_31;Percorso storico;VIA SANT’OLIVA – PIAZZA SAN FRANCESCO DI PAOLA;44;Parzialmente accessibile
+VIII;OSM;VS_32;Percorso storico;VIA BRUNETTO LATINI;44;Parzialmente accessibile
+VIII;OSM;VS_33;Percorso storico;VIA DOMENICO SCINA’ – VIA FILIPPO TURATI – VIA DANTE – VIA SERRADIFALCO – VIA ALESSIO NARBONE;41;Parzialmente accessibile
+VIII;OSM;VS_34;Percorso storico;CORSO CAMILLO FINOCCHIARO APRILE – VIA GIUSEPPE WHITAKER – VIA IMERA;46;Parzialmente accessibile
+VIII;OSM;VS_46;Percorso storico;VIA MONTALBO;46;Parzialmente accessibile
+VIII;stima;VS_47;Percorso storico;VIA AMMIRAGLIO RIZZO – PIAZZA ACQUASANTA – VIA BELMONTE (S.S.113);50;Parzialmente accessibile
+VIII;OSM;P_01;Piazza;PIAZZA CASTELNUOVO;35;Accessibile
+VIII;stima;P_02;Piazza;PIAZZA VITTORIO EMANUELE ORLANDO;32;Accessibile
+VIII;stima;VC_07;Via cittadina;VIA ARMANDO DIAZ – VIA MESSINA MARINE;47;Parzialmente accessibile
+VIII;stima;VC_08;Via cittadina;VIA MARESCIALLO GUGLIELMO PECORI GIRALDI – VIA XXVII MAGGIO;44;Parzialmente accessibile
+VIII;stima;VC_13;Via cittadina;VIA DELL’AUTONOMIA SICILIANA – VIA GIUSEPPE ALESSI – VIA MARIO RUTELLI – VIA GABRIELE D’ANNUNZIO;42;Parzialmente accessibile
+VIII;OSM;VC_14;Via cittadina;VIA MONTEPELLEGRINO – VIA DEI CANTIERI – VIA DON ORIONE;43;Parzialmente accessibile
+VIII;OSM;VC_15;Via cittadina;VIA ANWAR SADAT – VIA AMMIRAGLIO RIZZO;37;Accessibile
+VIII;OSM;VC_36;Via cittadina;VIA MARCHESE DI VILLABIANCA;40;Parzialmente accessibile
+VIII;stima;VC_37;Via cittadina;VIA G. LA FARINA;41;Parzialmente accessibile
+VIII;OSM;VC_38;Via cittadina;VIALE LAZIO – VIA IMPERATORE FEDERICO;38;Accessibile
+VIII;OSM;VC_39;Via cittadina;VIA SAMPOLO;50;Parzialmente accessibile
+VIII;OSM;VC_40;Via cittadina;VIA PRINCIPE DI VILLAFRANCA – VIA PIERSANTI MATTARELLA – VIA GIACOMO LEOPARDI – VIA BORIS GIULIANO;41;Parzialmente accessibile
+VIII;OSM;VC_41;Via cittadina;VIA TERRASANTA – VIA GIUSEPPE SCIUTI – VIA EMPEDOCLE RESTIVO – VIALE STRASBURGO;32;Accessibile
+VIII;OSM;VC_44;Via cittadina;VIA DELLA LIBERTÀ – VIA DELLA CROCE ROSSA;38;Accessibile
+VIII;OSM;VC_49;Via cittadina;VIA DAMIANI ALMEYDA;41;Parzialmente accessibile
+Non determinata;;AV_17;Area verde;GIARDINO EX CASA DELLA MADRE E DEL BAMBINO “MARIA PIA DI SAVOIA” – VIA PAPIRETO;46;Parzialmente accessibile
+Non determinata;;VS_24;Percorso storico;VIA DEL PONTICELLO - VIA PORTA DI CASTRO;61;Parzialmente accessibile

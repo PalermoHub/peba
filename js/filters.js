@@ -1,0 +1,293 @@
+// ════════════════════════════════════════════════════════════════════════
+// Filtri intelligenti e interconnessi: Circoscrizione → Quartiere → UPL,
+// Gruppo, Livello accessibilità, ricerca testuale. Ogni dimensione ricalcola
+// le opzioni disponibili nelle altre in base ai filtri già attivi
+// (comprese le voci di legenda, che funzionano anch'esse da filtro).
+// ════════════════════════════════════════════════════════════════════════
+
+let PF_FEATURES = []; // [{ p: properties, lng, lat }]
+
+const pfState = {
+  circ: '', quart: '', upl: '',
+  gruppo: new Set(),
+  livello: new Set(),
+  q: '',
+};
+
+const GRUPPO_ORDER = [
+  'Percorso storico', 'Via cittadina', 'Scuola', 'Asilo',
+  'Sede amministrativa/istituzionale', 'Area verde',
+  'Sito UNESCO (edificio)', 'Percorso UNESCO', 'Piazza', 'Museo',
+];
+const LIVELLO_ORDER = [
+  'Accessibile', 'Parzialmente accessibile', 'Parzialmente inaccessibile',
+  'Inaccessibile', 'Non valutabile',
+];
+
+// ── Match per dimensione, esclude eventualmente una o più dimensioni ─────
+function pfPasses(p, except) {
+  const skip = (d) => except.includes(d);
+  if (!skip('circ')  && pfState.circ  && p.Circoscrizione !== pfState.circ)  return false;
+  if (!skip('quart') && pfState.quart && p.Quartiere      !== pfState.quart) return false;
+  if (!skip('upl')   && pfState.upl   && p.UPL            !== pfState.upl)   return false;
+  if (!skip('gruppo')  && pfState.gruppo.size  && !pfState.gruppo.has(p.Gruppo)) return false;
+  if (!skip('livello') && pfState.livello.size && !pfState.livello.has(p['Livello accessibilita'])) return false;
+  if (!skip('q') && pfState.q) {
+    const hay = `${p['Nome Immobile'] || ''} ${p.Indirizzo || ''} ${p.Codice || ''}`.toLowerCase();
+    if (!hay.includes(pfState.q)) return false;
+  }
+  return true;
+}
+const pfMatchesAll = (p) => pfPasses(p, []);
+
+// ── Popolamento select cascading (interconnesse su tutte le dimensioni) ──
+function pfPopulateSelect(selectEl, dimKey, propKey, allLabel) {
+  const counts = new Map();
+  PF_FEATURES.forEach(({ p }) => {
+    if (!pfPasses(p, [dimKey])) return;
+    const v = p[propKey];
+    if (!v) return;
+    counts.set(v, (counts.get(v) || 0) + 1);
+  });
+  const values = [...counts.keys()].sort((a, b) => a.localeCompare(b, 'it'));
+  const current = pfState[dimKey];
+  selectEl.innerHTML = `<option value="">${allLabel}</option>` +
+    values.map((v) => `<option value="${esc(v)}">${esc(v)} (${counts.get(v)})</option>`).join('');
+  if (current && counts.has(current)) {
+    selectEl.value = current;
+  } else if (current) {
+    pfState[dimKey] = '';
+    selectEl.value = '';
+  }
+}
+
+// ── Chipset (Gruppo / Livello): checkbox multiple con conteggio live ─────
+function pfBuildChipset(container, dimKey, propKey, order, colorMap) {
+  container.innerHTML = order.map((v) => `
+    <button type="button" class="pf-chip-opt" data-dim="${dimKey}" data-value="${esc(v)}">
+      <span class="pf-chip-dot" style="background:${(colorMap && colorMap[v]) || '#999'}"></span>
+      <span class="pf-chip-lbl">${esc(v)}</span>
+      <span class="pf-chip-cnt"></span>
+    </button>
+  `).join('');
+  container.querySelectorAll('.pf-chip-opt').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const set = pfState[dimKey];
+      const v = btn.dataset.value;
+      if (set.has(v)) set.delete(v); else set.add(v);
+      pfRenderAll();
+    });
+  });
+}
+
+function pfUpdateChipset(container, dimKey, propKey) {
+  const counts = new Map();
+  PF_FEATURES.forEach(({ p }) => {
+    if (!pfPasses(p, [dimKey])) return;
+    const v = p[propKey];
+    if (!v) return;
+    counts.set(v, (counts.get(v) || 0) + 1);
+  });
+  container.querySelectorAll('.pf-chip-opt').forEach((btn) => {
+    const v = btn.dataset.value;
+    const n = counts.get(v) || 0;
+    btn.querySelector('.pf-chip-cnt').textContent = n;
+    btn.classList.toggle('active', pfState[dimKey].has(v));
+    btn.classList.toggle('empty', n === 0);
+  });
+}
+
+// ── Legenda "Gruppo" sulla mappa: raddoppia da filtro ─────────────────────
+function pfUpdateLegend() {
+  document.querySelectorAll('#map-legends .legend-row[data-dim]').forEach((row) => {
+    const dim = row.dataset.dim;
+    const val = row.dataset.value;
+    const count = PF_FEATURES.filter(({ p }) => pfPasses(p, [dim]) && p[dim === 'gruppo' ? 'Gruppo' : 'Livello accessibilita'] === val).length;
+    const countEl = row.querySelector('.legend-count');
+    if (countEl) countEl.textContent = `(${count})`;
+    const active = pfState[dim].has(val);
+    row.classList.toggle('active', active);
+    row.classList.toggle('dimmed', pfState[dim].size > 0 && !active);
+    row.classList.toggle('empty', count === 0);
+  });
+}
+
+document.querySelectorAll('#map-legends .legend-row[data-dim]').forEach((row) => {
+  row.addEventListener('click', () => {
+    const dim = row.dataset.dim;
+    const v = row.dataset.value;
+    const set = pfState[dim];
+    if (set.has(v)) set.delete(v); else set.add(v);
+    pfRenderAll();
+  });
+});
+
+// ── Chip attivi (barra di ricerca) ────────────────────────────────────────
+function pfUpdateChips() {
+  const chipsEl = document.getElementById('pf-chips');
+  const badge = document.getElementById('pf-filter-badge');
+  const btn = document.getElementById('pf-filter-btn');
+  const active = [];
+  if (pfState.circ)  active.push({ label: pfState.circ,  clear: () => { pfState.circ = ''; } });
+  if (pfState.quart) active.push({ label: pfState.quart, clear: () => { pfState.quart = ''; } });
+  if (pfState.upl)   active.push({ label: pfState.upl,   clear: () => { pfState.upl = ''; } });
+  pfState.gruppo.forEach((v)  => active.push({ label: v, clear: () => pfState.gruppo.delete(v) }));
+  pfState.livello.forEach((v) => active.push({ label: v, clear: () => pfState.livello.delete(v) }));
+  if (pfState.q) active.push({ label: `“${pfState.q}”`, clear: () => { pfState.q = ''; document.getElementById('pf-search-input').value = ''; } });
+
+  badge.style.display = active.length ? 'flex' : 'none';
+  badge.textContent = active.length;
+  btn.classList.toggle('active', active.length > 0);
+
+  chipsEl.style.display = active.length ? 'flex' : 'none';
+  chipsEl.innerHTML = active.map((f, i) => `
+    <span class="pf-chip">${esc(f.label)}<button class="pf-chip-close" data-i="${i}">✕</button></span>
+  `).join('') + (active.length > 1 ? `<button class="pf-chip pf-chip-resetall" id="pf-chips-resetall">✕ tutti</button>` : '');
+
+  chipsEl.querySelectorAll('.pf-chip-close').forEach((b) => {
+    b.addEventListener('click', () => { active[+b.dataset.i].clear(); pfRenderAll(); });
+  });
+  const ra = document.getElementById('pf-chips-resetall');
+  if (ra) ra.addEventListener('click', pfResetAll);
+}
+
+// ── Applica filtro al layer mappa + contatore risultati ───────────────────
+function pfApplyMapFilter() {
+  const matched = PF_FEATURES.filter(({ p }) => pfMatchesAll(p));
+  const codes = matched.map(({ p }) => p.Codice);
+  if (map.getLayer('peba-punti-circle')) {
+    map.setFilter('peba-punti-circle', codes.length
+      ? ['in', ['get', 'Codice'], ['literal', codes]]
+      : ['==', ['get', 'Codice'], '__nessuno__']);
+  }
+  const rc = document.getElementById('pf-result-count');
+  if (rc) rc.textContent = `${matched.length} di ${PF_FEATURES.length} immobili`;
+  const zoomBtn = document.getElementById('pf-zoom');
+  if (zoomBtn) zoomBtn.disabled = matched.length === 0;
+  pfLastMatched = matched;
+}
+let pfLastMatched = [];
+
+// ── Render completo (chiamato ad ogni cambio stato) ───────────────────────
+function pfRenderAll() {
+  pfPopulateSelect(document.getElementById('pf-circ'),  'circ',  'Circoscrizione', '— Tutte —');
+  pfPopulateSelect(document.getElementById('pf-quart'), 'quart', 'Quartiere',      '— Tutti —');
+  pfPopulateSelect(document.getElementById('pf-upl'),   'upl',   'UPL',            '— Tutte —');
+  pfUpdateChipset(document.getElementById('pf-gruppo-set'),  'gruppo',  'Gruppo');
+  pfUpdateChipset(document.getElementById('pf-livello-set'), 'livello', 'Livello accessibilita');
+  pfUpdateLegend();
+  pfUpdateChips();
+  pfApplyMapFilter();
+}
+
+function pfResetAll() {
+  pfState.circ = ''; pfState.quart = ''; pfState.upl = '';
+  pfState.gruppo.clear(); pfState.livello.clear();
+  pfState.q = '';
+  const si = document.getElementById('pf-search-input');
+  if (si) si.value = '';
+  document.getElementById('pf-search-clear').style.display = 'none';
+  pfRenderAll();
+}
+
+// ── Ricerca testuale + suggerimenti immobili ──────────────────────────────
+function pfRenderSuggestions(query) {
+  const dd = document.getElementById('pf-search-dd');
+  const q = query.trim().toLowerCase();
+  if (!q) { dd.classList.remove('open'); dd.innerHTML = ''; return; }
+  const matches = PF_FEATURES.filter(({ p }) =>
+    (p['Nome Immobile'] || '').toLowerCase().includes(q) ||
+    (p.Indirizzo || '').toLowerCase().includes(q)
+  ).slice(0, 8);
+  if (!matches.length) {
+    dd.innerHTML = `<div class="pf-dd-empty">Nessun risultato per &ldquo;${esc(query)}&rdquo;</div>`;
+    dd.classList.add('open');
+    return;
+  }
+  dd.innerHTML = matches.map(({ p }, i) => `
+    <div class="pf-dd-item" data-i="${i}">
+      <span class="pf-dd-name">${esc(p['Nome Immobile'] || '(senza nome)')}</span>
+      <span class="pf-dd-badge">${esc(p.Gruppo || '')}</span>
+    </div>
+  `).join('');
+  dd.classList.add('open');
+  dd.querySelectorAll('.pf-dd-item').forEach((el) => {
+    el.addEventListener('click', () => {
+      const m = matches[+el.dataset.i];
+      map.flyTo({ center: [m.lng, m.lat], zoom: Math.max(map.getZoom(), 16) });
+      window.showPebaDetail(m.p, { lat: m.lat, lng: m.lng });
+      dd.classList.remove('open');
+      document.getElementById('pf-search-input').value = '';
+      document.getElementById('pf-search-clear').style.display = 'none';
+    });
+  });
+}
+
+// ── Init ───────────────────────────────────────────────────────────────
+fetch(DATA.peba).then((r) => r.json()).then((geo) => {
+  PF_FEATURES = geo.features.map((f) => ({
+    p: f.properties,
+    lng: f.geometry.coordinates[0],
+    lat: f.geometry.coordinates[1],
+  }));
+
+  pfBuildChipset(document.getElementById('pf-gruppo-set'),  'gruppo',  'Gruppo', GRUPPO_ORDER, COLORI_GRUPPO);
+  pfBuildChipset(document.getElementById('pf-livello-set'), 'livello', 'Livello accessibilita', LIVELLO_ORDER, COLORI_ACCESSIBILITA);
+
+  const start = () => { pfRenderAll(); };
+  if (map.loaded()) start(); else map.on('load', start);
+
+  // Select cascading
+  ['circ', 'quart', 'upl'].forEach((dim) => {
+    const propKey = dim === 'circ' ? 'Circoscrizione' : dim === 'quart' ? 'Quartiere' : 'UPL';
+    document.getElementById(`pf-${dim}`).addEventListener('change', (e) => {
+      pfState[dim] = e.target.value;
+      pfRenderAll();
+    });
+  });
+
+  // Ricerca
+  const searchInput = document.getElementById('pf-search-input');
+  const searchClear = document.getElementById('pf-search-clear');
+  searchInput.addEventListener('input', () => {
+    searchClear.style.display = searchInput.value ? '' : 'none';
+    pfState.q = searchInput.value.trim().toLowerCase();
+    pfRenderSuggestions(searchInput.value);
+    pfRenderAll();
+  });
+  searchClear.addEventListener('click', () => {
+    searchInput.value = ''; searchClear.style.display = 'none';
+    pfState.q = '';
+    document.getElementById('pf-search-dd').classList.remove('open');
+    pfRenderAll();
+  });
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('#pf-searchbar')) document.getElementById('pf-search-dd').classList.remove('open');
+  });
+
+  // Modale filtri
+  const modal = document.getElementById('pf-modal');
+  const overlay = document.getElementById('pf-overlay');
+  const openModal = () => { modal.classList.add('open'); overlay.classList.add('open'); };
+  const closeModal = () => { modal.classList.remove('open'); overlay.classList.remove('open'); };
+  document.getElementById('pf-filter-btn').addEventListener('click', openModal);
+  document.getElementById('pf-modal-close').addEventListener('click', closeModal);
+  overlay.addEventListener('click', closeModal);
+  document.getElementById('pf-reset').addEventListener('click', pfResetAll);
+
+  document.getElementById('pf-zoom').addEventListener('click', () => {
+    if (!pfLastMatched.length) return;
+    let minLng = Infinity, minLat = Infinity, maxLng = -Infinity, maxLat = -Infinity;
+    pfLastMatched.forEach(({ lng, lat }) => {
+      minLng = Math.min(minLng, lng); maxLng = Math.max(maxLng, lng);
+      minLat = Math.min(minLat, lat); maxLat = Math.max(maxLat, lat);
+    });
+    map.fitBounds([[minLng, minLat], [maxLng, maxLat]], { padding: 60, maxZoom: 17 });
+  });
+
+  // Legenda collassabile su mobile (aperta di default su desktop)
+  const legendGruppo = document.getElementById('legend-gruppo');
+  const legendToggle = document.getElementById('legend-gruppo-toggle');
+  if (window.matchMedia('(max-width: 640px)').matches) legendGruppo.classList.add('collapsed');
+  legendToggle.addEventListener('click', () => legendGruppo.classList.toggle('collapsed'));
+});
