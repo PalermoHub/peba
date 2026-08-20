@@ -59,6 +59,12 @@ poi apri `http://localhost:8000/index.html`.
 - Rilievo PEBA — Comune di Palermo (Delibera di Giunta Comunale n° 272 del 18/07/2026).
 - Rete stradale: estratto OpenStreetMap, elaborazione PalermoHub.
 
+**Progettisti del Comune di Palermo:**
+- Arch. Irene Calabria — Redattore del Piano (Progettista)
+- Ing. Fabio Granata — Responsabile Unico del Progetto (R.U.P.)
+- Ing. Marco Ciralli — Capo Area Responsabile della Pianificazione
+- Prof. Arch. Maurizio Carta — Assessore all'Urbanistica e alla Pianificazione
+
 I dati sono stati estratti automaticamente da 25 PDF originali tramite PyMuPDF; dettagli completi
 nella scheda "Metodologia" del pannello Info dell'app e in `dati/metodologia_estrazione.md`.
 
