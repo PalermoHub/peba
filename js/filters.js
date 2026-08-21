@@ -97,12 +97,50 @@ function pfUpdateChipset(container, dimKey, propKey) {
   });
 }
 
-// ── Legenda "Gruppo" sulla mappa: raddoppia da filtro ─────────────────────
+// ── Legenda sulla mappa (livello o gruppo): raddoppia da filtro ──────────
+const LEGEND_DIMS = {
+  livello: {
+    propKey: 'Livello accessibilita', order: LIVELLO_ORDER, colors: COLORI_ACCESSIBILITA, title: 'Accessibilità',
+    labels: {
+      'Accessibile': 'accessibile',
+      'Parzialmente accessibile': 'parzialmente accessibile',
+      'Parzialmente inaccessibile': 'parzialmente inaccessibile',
+      'Inaccessibile': 'inaccessibile',
+      'Non valutabile': 'non valutabile',
+    },
+  },
+  gruppo: { propKey: 'Gruppo', order: GRUPPO_ORDER, colors: COLORI_GRUPPO, title: 'Gruppo' },
+};
+let legendDim = 'livello';
+
+function pfBuildLegend(dim) {
+  legendDim = dim;
+  const cfg = LEGEND_DIMS[dim];
+  const rowsEl = document.getElementById('legend-rows');
+  const titleEl = document.getElementById('legend-gruppo-toggle');
+  titleEl.innerHTML = `<span class="legend-toggle-arrow">▾</span>${esc(cfg.title)} <span class="map-legend-hint">(clic per filtrare)</span>`;
+  rowsEl.innerHTML = cfg.order.map((v) => `
+    <div class="legend-row" data-dim="${dim}" data-value="${esc(v)}"><span class="legend-dot" style="background:${cfg.colors[v] || '#999999'}"></span><span class="legend-label">${esc((cfg.labels && cfg.labels[v]) || v)}</span><span class="legend-count"></span></div>
+  `).join('');
+  rowsEl.querySelectorAll('.legend-row[data-dim]').forEach((row) => {
+    row.addEventListener('click', () => {
+      const d = row.dataset.dim;
+      const v = row.dataset.value;
+      const set = pfState[d];
+      if (set.has(v)) set.delete(v); else set.add(v);
+      pfRenderAll();
+    });
+  });
+  pfUpdateLegend();
+}
+window.pfBuildLegend = pfBuildLegend;
+
 function pfUpdateLegend() {
+  const cfg = LEGEND_DIMS[legendDim];
   document.querySelectorAll('#map-legends .legend-row[data-dim]').forEach((row) => {
     const dim = row.dataset.dim;
     const val = row.dataset.value;
-    const count = PF_FEATURES.filter(({ p }) => pfPasses(p, [dim]) && p[dim === 'gruppo' ? 'Gruppo' : 'Livello accessibilita'] === val).length;
+    const count = PF_FEATURES.filter(({ p }) => pfPasses(p, [dim]) && p[cfg.propKey] === val).length;
     const countEl = row.querySelector('.legend-count');
     if (countEl) countEl.textContent = `(${count})`;
     const active = pfState[dim].has(val);
@@ -111,16 +149,6 @@ function pfUpdateLegend() {
     row.classList.toggle('empty', count === 0);
   });
 }
-
-document.querySelectorAll('#map-legends .legend-row[data-dim]').forEach((row) => {
-  row.addEventListener('click', () => {
-    const dim = row.dataset.dim;
-    const v = row.dataset.value;
-    const set = pfState[dim];
-    if (set.has(v)) set.delete(v); else set.add(v);
-    pfRenderAll();
-  });
-});
 
 // ── Chip attivi (barra di ricerca) ────────────────────────────────────────
 function pfUpdateChips() {
@@ -233,6 +261,7 @@ fetch(DATA.peba).then((r) => r.json()).then((geo) => {
 
   pfBuildChipset(document.getElementById('pf-gruppo-set'),  'gruppo',  'Gruppo', GRUPPO_ORDER, COLORI_GRUPPO);
   pfBuildChipset(document.getElementById('pf-livello-set'), 'livello', 'Livello accessibilita', LIVELLO_ORDER, COLORI_ACCESSIBILITA);
+  pfBuildLegend('livello');
 
   const start = () => { pfRenderAll(); };
   if (map.loaded()) start(); else map.on('load', start);

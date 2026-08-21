@@ -137,80 +137,117 @@ function updateSchedaUrl(codice) {
   if (codice) url.searchParams.set('scheda', codice);
   else url.searchParams.delete('scheda');
   history.replaceState(null, '', url);
-  notifyParentRoute();
 }
 window.updateSchedaUrl = updateSchedaUrl;
-
-// Se incorporata in iframe su palermohub.opendatasicilia.it, tiene sincronizzata
-// la barra indirizzi del parent (?scheda=...#zoom/lat/lng) via postMessage.
-const PARENT_ORIGIN = 'https://palermohub.opendatasicilia.it';
-function notifyParentRoute() {
-  if (window.parent === window) return;
-  try {
-    window.parent.postMessage({
-      type: 'peba:route',
-      scheda: new URLSearchParams(window.location.search).get('scheda'),
-      hash: window.location.hash,
-    }, PARENT_ORIGIN);
-  } catch (e) { /* iframe non raggiungibile, ignora */ }
-}
-map.on('moveend', notifyParentRoute);
 
 // Stessa palette della legenda "Accessibilità", applicata ai punti immobile
 const RAMP_LIVELLO = ['match', ['get', 'Livello accessibilita']];
 Object.entries(COLORI_ACCESSIBILITA).forEach(([k, v]) => { RAMP_LIVELLO.push(k, v); });
 RAMP_LIVELLO.push(COLORI_ACCESSIBILITA['Non valutabile']);
 
-// Le vie/percorsi PEBA non hanno un livello di accessibilità proprio (dato censito
-// solo sugli immobili): restano su un colore neutro, distinto dalla rete di sfondo
-const COLORE_VIA_PEBA = '#3e548e';
+// Stessa palette della legenda "Gruppo", applicata ai punti immobile
+const RAMP_GRUPPO = ['match', ['get', 'Gruppo']];
+Object.entries(COLORI_GRUPPO).forEach(([k, v]) => { RAMP_GRUPPO.push(k, v); });
+RAMP_GRUPPO.push('#999999');
+
+// Stessa palette "Gruppo", applicata alle vie/percorsi PEBA (proprietà peba_tipo)
+const RAMP_GRUPPO_VIA = ['match', ['get', 'peba_tipo']];
+Object.entries(COLORI_GRUPPO).forEach(([k, v]) => { RAMP_GRUPPO_VIA.push(k, v); });
+RAMP_GRUPPO_VIA.push('#999999');
+
+// Stessa palette "Livello accessibilità", applicata alle vie/percorsi PEBA
+// (proprietà livello_via, ricavata per match nome via ↔ Nome/Localizzazione immobile)
+const RAMP_LIVELLO_VIA = ['match', ['get', 'livello_via']];
+Object.entries(COLORI_ACCESSIBILITA).forEach(([k, v]) => { RAMP_LIVELLO_VIA.push(k, v); });
+RAMP_LIVELLO_VIA.push(COLORI_ACCESSIBILITA['Non valutabile']);
+
+// Tema colore mappa (e legenda): 'livello' (default) o 'gruppo'
+let currentMapTheme = 'livello';
+function setMapTheme(theme) {
+  currentMapTheme = theme;
+  if (map.getLayer('peba-punti-circle')) {
+    map.setPaintProperty('peba-punti-circle', 'circle-color', theme === 'gruppo' ? RAMP_GRUPPO : RAMP_LIVELLO);
+  }
+  if (map.getLayer('rete-archi-peba-line')) {
+    map.setPaintProperty('rete-archi-peba-line', 'line-color', theme === 'gruppo' ? RAMP_GRUPPO_VIA : RAMP_LIVELLO_VIA);
+  }
+}
+window.setMapTheme = setMapTheme;
+
+// Nome via/piazza (maiuscolo) → Livello accessibilità dell'immobile-percorso PEBA
+// corrispondente. Un percorso (es. "VIA MAGIONE - VIA DELLA PACE - ...") copre più
+// vie: ogni componente eredita il livello dell'intero percorso.
+const NOME_TO_LIVELLO = {};
+function indicizzaLivelloVie(pebaGeo) {
+  pebaGeo.features.forEach((f) => {
+    const p = f.properties;
+    const loc = p['Nome/Localizzazione'] || '';
+    loc.split(' - ').forEach((parte) => {
+      const chiave = parte.trim().toUpperCase();
+      if (chiave) NOME_TO_LIVELLO[chiave] = p['Livello accessibilita'];
+    });
+  });
+}
 
 map.on('load', () => {
-  // ── Immobili PEBA — sorgente piccola (144 KB), caricata subito ──────────
-  map.addSource('peba-punti', { type: 'geojson', data: DATA.peba });
-  map.addLayer({
-    id: 'peba-punti-circle', type: 'circle', source: 'peba-punti',
-    paint: {
-      'circle-radius': ['interpolate', ['linear'], ['zoom'], 11, 4, 16, 9],
-      'circle-color': RAMP_LIVELLO,
-      'circle-stroke-width': 1,
-      'circle-stroke-color': '#ffffff',
-      'circle-opacity': 0.9,
-      'circle-stroke-opacity': 1,
-    },
-  });
+  fetch(DATA.peba).then((r) => r.json()).then((pebaGeo) => {
+    indicizzaLivelloVie(pebaGeo);
 
-  updateMapScale();
-
-  // ── Rete stradale — sorgente grande (~7.7 MB), differita dopo il primo
-  // rendering per non contendere banda/priorità col caricamento dei punti ──
-  map.once('idle', () => {
-    if (map.getSource('rete-archi')) return;
-    map.addSource('rete-archi', { type: 'geojson', data: DATA.reteArchi });
-
-    // Rete stradale — sfondo di riferimento, non interattiva
+    // ── Immobili PEBA — sorgente piccola (144 KB), caricata subito ──────────
+    map.addSource('peba-punti', { type: 'geojson', data: pebaGeo });
     map.addLayer({
-      id: 'rete-archi-line', type: 'line', source: 'rete-archi',
-      filter: ['!=', ['get', 'peba_via'], true],
-      layout: { 'line-cap': 'round' },
+      id: 'peba-punti-circle', type: 'circle', source: 'peba-punti',
       paint: {
-        'line-color': '#9aa5c4',
-        'line-width': ['interpolate', ['linear'], ['zoom'], 11, 0.4, 16, 1.6],
-        'line-opacity': 0,
+        'circle-radius': ['interpolate', ['linear'], ['zoom'], 11, 4, 16, 9],
+        'circle-color': RAMP_LIVELLO,
+        'circle-stroke-width': 1,
+        'circle-stroke-color': '#ffffff',
+        'circle-opacity': 0.9,
+        'circle-stroke-opacity': 1,
       },
-    }, 'peba-punti-circle');
+    });
 
-    // Vie/percorsi PEBA — colore neutro (nessun dato di accessibilità per via)
-    map.addLayer({
-      id: 'rete-archi-peba-line', type: 'line', source: 'rete-archi',
-      filter: ['==', ['get', 'peba_via'], true],
-      layout: { 'line-cap': 'round' },
-      paint: {
-        'line-color': COLORE_VIA_PEBA,
-        'line-width': ['interpolate', ['linear'], ['zoom'], 11, 1.2, 16, 4],
-        'line-opacity': 0.9,
-      },
-    }, 'peba-punti-circle');
+    updateMapScale();
+
+    // ── Rete stradale — sorgente grande (~7.7 MB), differita dopo il primo
+    // rendering per non contendere banda/priorità col caricamento dei punti ──
+    map.once('idle', () => {
+      if (map.getSource('rete-archi')) return;
+      fetch(DATA.reteArchi).then((r) => r.json()).then((reteGeo) => {
+        reteGeo.features.forEach((f) => {
+          const p = f.properties;
+          if (p.peba_via) {
+            const chiave = (p.nome || '').trim().toUpperCase();
+            p.livello_via = NOME_TO_LIVELLO[chiave] || 'Non valutabile';
+          }
+        });
+        map.addSource('rete-archi', { type: 'geojson', data: reteGeo });
+
+        // Rete stradale — sfondo di riferimento, non interattiva
+        map.addLayer({
+          id: 'rete-archi-line', type: 'line', source: 'rete-archi',
+          filter: ['!=', ['get', 'peba_via'], true],
+          layout: { 'line-cap': 'round' },
+          paint: {
+            'line-color': '#9aa5c4',
+            'line-width': ['interpolate', ['linear'], ['zoom'], 11, 0.4, 16, 1.6],
+            'line-opacity': 0,
+          },
+        }, 'peba-punti-circle');
+
+        // Vie/percorsi PEBA — colorate come i punti, per gruppo o livello di accessibilità
+        map.addLayer({
+          id: 'rete-archi-peba-line', type: 'line', source: 'rete-archi',
+          filter: ['==', ['get', 'peba_via'], true],
+          layout: { 'line-cap': 'round' },
+          paint: {
+            'line-color': currentMapTheme === 'gruppo' ? RAMP_GRUPPO_VIA : RAMP_LIVELLO_VIA,
+            'line-width': ['interpolate', ['linear'], ['zoom'], 11, 1.2, 16, 4],
+            'line-opacity': 0.9,
+          },
+        }, 'peba-punti-circle');
+      });
+    });
   });
 });
 
@@ -595,6 +632,16 @@ function updateAttribution(keys) {
   });
 }
 map.on('load', () => renderBasemaps());
+
+// ── Toolbar: tema colore mappa + legenda (livello / gruppo, esclusivi) ────
+document.getElementById('tb-theme').addEventListener('click', (e) => {
+  const btn = e.target.closest('.tb-radio');
+  if (!btn || btn.classList.contains('active')) return;
+  document.querySelectorAll('#tb-theme .tb-radio').forEach((b) => b.classList.toggle('active', b === btn));
+  const theme = btn.dataset.theme;
+  setMapTheme(theme);
+  if (window.pfBuildLegend) window.pfBuildLegend(theme);
+});
 
 // ── Toolbar: rete stradale on/off ───────────────────────────────────────
 document.getElementById('tb-vie').addEventListener('click', (e) => {

@@ -56,13 +56,46 @@
   <div class="tb-sep"></div>
 
   <div class="tb-group" id="tb-basemaps" role="group" aria-label="Cartografia di base">
-    <button class="tb-btn tb-radio active" data-basemap="osm" title="OpenStreetMap">OSM</button>
-    <button class="tb-btn tb-radio" data-basemap="satellite" title="Google Satellite">SAT</button>
+    <button class="tb-btn tb-radio active" data-basemap="osm" title="OpenStreetMap">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/>
+      </svg>
+      <span class="tb-lbl">OSM</span>
+    </button>
+    <button class="tb-btn tb-radio" data-basemap="satellite" title="Google Satellite">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="6" cy="18" r="2" fill="currentColor" stroke="none"/><path d="M4 4a16 16 0 0 1 16 16"/><path d="M4 11a9 9 0 0 1 9 9"/>
+      </svg>
+      <span class="tb-lbl">SAT</span>
+    </button>
   </div>
 
   <div id="tb-basemap-opacity-wrap" class="tb-basemap-opacity-wrap" hidden>
     <input type="range" id="tb-basemap-opacity" min="0" max="100" value="100" title="Opacità mappa in primo piano">
     <span id="tb-basemap-opacity-val" class="tb-si-val">100%</span>
+  </div>
+
+  <div class="tb-sep"></div>
+
+  <div class="tb-group" id="tb-theme" role="group" aria-label="Colora mappa e legenda per">
+    <button class="tb-btn tb-radio active" data-theme="livello" title="Colora per livello di accessibilità">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="9.5" cy="4" r="1.6" fill="currentColor" stroke="none"/>
+        <path d="M9.5 6.3v4.2h4.3M9.5 10.5l-2 8.5M9.5 10.5l3 4.3h4.7"/>
+        <circle cx="15.3" cy="16.8" r="4"/>
+        <path d="M5.8 19h3.7"/>
+      </svg>
+      <span class="tb-lbl">Livello</span>
+    </button>
+    <button class="tb-btn tb-radio" data-theme="gruppo" title="Colora per gruppo/tipo immobile">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="8" width="8" height="13" rx="1"/>
+        <rect x="13" y="3" width="8" height="18" rx="1"/>
+        <line x1="6" y1="11" x2="6" y2="11"/><line x1="6" y1="14" x2="6" y2="14"/><line x1="6" y1="17" x2="6" y2="17"/>
+        <line x1="16" y1="6" x2="16" y2="6"/><line x1="16" y1="9" x2="16" y2="9"/><line x1="16" y1="12" x2="16" y2="12"/><line x1="16" y1="15" x2="16" y2="15"/>
+      </svg>
+      <span class="tb-lbl">Gruppo</span>
+    </button>
   </div>
 
   <div class="tb-sep"></div>
@@ -90,13 +123,7 @@
 <div id="map-legends">
   <div class="map-legend visible" id="legend-gruppo">
     <div class="map-legend-title" id="legend-gruppo-toggle"><span class="legend-toggle-arrow">▾</span>Accessibilità <span class="map-legend-hint">(clic per filtrare)</span></div>
-    <div class="legend-rows">
-    <div class="legend-row" data-dim="livello" data-value="Accessibile"><span class="legend-dot" style="background:#2b8a3e"></span><span class="legend-label">accessibile</span><span class="legend-count"></span></div>
-    <div class="legend-row" data-dim="livello" data-value="Parzialmente accessibile"><span class="legend-dot" style="background:#94c93d"></span><span class="legend-label">parzialmente accessibile</span><span class="legend-count"></span></div>
-    <div class="legend-row" data-dim="livello" data-value="Parzialmente inaccessibile"><span class="legend-dot" style="background:#f0b429"></span><span class="legend-label">parzialmente inaccessibile</span><span class="legend-count"></span></div>
-    <div class="legend-row" data-dim="livello" data-value="Inaccessibile"><span class="legend-dot" style="background:#c92a2a"></span><span class="legend-label">inaccessibile</span><span class="legend-count"></span></div>
-    <div class="legend-row" data-dim="livello" data-value="Non valutabile"><span class="legend-dot" style="background:#999999"></span><span class="legend-label">non valutabile</span><span class="legend-count"></span></div>
-    </div>
+    <div class="legend-rows" id="legend-rows"></div>
   </div>
 </div>
 
