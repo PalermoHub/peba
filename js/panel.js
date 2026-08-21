@@ -12,6 +12,22 @@ document.getElementById('panel-nav')?.addEventListener('click', (e) => {
   document.querySelectorAll('#panel-body .tab-pane').forEach(p => p.classList.toggle('active', p.dataset.tab === tab));
 });
 
+// ── Pulsante "torna in cima" nel pannello inferiore ────────────────────────
+(function initPanelBackTop() {
+  const btn = document.getElementById('panel-back-top');
+  if (!btn) return;
+  const activePane = () => document.querySelector('#panel-body .tab-pane.active');
+  const updateVisibility = () => {
+    const pane = activePane();
+    btn.classList.toggle('visible', !!pane && pane.scrollTop > 200);
+  };
+  document.getElementById('panel-body').addEventListener('scroll', updateVisibility, true);
+  document.getElementById('panel-nav')?.addEventListener('click', () => setTimeout(updateVisibility, 0));
+  btn.addEventListener('click', () => {
+    activePane()?.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+})();
+
 // ── Apertura/chiusura pannello destro (dettaglio immobile) ────────────────
 (function initRightPanel() {
   const rpWrap = document.getElementById('rp-wrap');
