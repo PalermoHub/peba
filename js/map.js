@@ -135,7 +135,7 @@ map.on('load', () => {
     paint: {
       'line-color': '#9aa5c4',
       'line-width': ['interpolate', ['linear'], ['zoom'], 11, 0.4, 16, 1.6],
-      'line-opacity': 0.55,
+      'line-opacity': 0,
     },
   });
 
