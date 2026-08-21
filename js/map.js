@@ -330,19 +330,23 @@ function rpGalleriaFoto(codice, nFoto) {
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = i === 1 ? 'rp-photo-thumb rp-photo-thumb-cover' : 'rp-photo-thumb';
+    const full = `${base}.jpg`;
+    srcs[i - 1] = full;
     const img = document.createElement('img');
     img.loading = 'lazy'; img.alt = `Foto ${i} — ${esc(codice)}`;
-    img.dataset.tried = 'jpg';
-    img.src = `${base}.jpg`;
+    img.dataset.tried = 'thumb';
+    img.src = `${base}_thumb.jpg`;
     img.onerror = () => {
-      if (img.dataset.tried === 'jpg') {
+      if (img.dataset.tried === 'thumb') {
+        img.dataset.tried = 'jpg';
+        img.src = full;
+      } else if (img.dataset.tried === 'jpg') {
         img.dataset.tried = 'png';
         img.src = `${base}.png`;
       } else {
         btn.remove();
       }
     };
-    img.onload = () => { srcs[i - 1] = img.src; };
     btn.appendChild(img);
     btn.addEventListener('click', () => openPhotoModal(srcs, i - 1, codice));
     grid.appendChild(btn);
