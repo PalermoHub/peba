@@ -137,8 +137,24 @@ function updateSchedaUrl(codice) {
   if (codice) url.searchParams.set('scheda', codice);
   else url.searchParams.delete('scheda');
   history.replaceState(null, '', url);
+  notifyParentRoute();
 }
 window.updateSchedaUrl = updateSchedaUrl;
+
+// Se incorporata in iframe su palermohub.opendatasicilia.it, tiene sincronizzata
+// la barra indirizzi del parent (?scheda=...#zoom/lat/lng) via postMessage.
+const PARENT_ORIGIN = 'https://palermohub.opendatasicilia.it';
+function notifyParentRoute() {
+  if (window.parent === window) return;
+  try {
+    window.parent.postMessage({
+      type: 'peba:route',
+      scheda: new URLSearchParams(window.location.search).get('scheda'),
+      hash: window.location.hash,
+    }, PARENT_ORIGIN);
+  } catch (e) { /* iframe non raggiungibile, ignora */ }
+}
+map.on('moveend', notifyParentRoute);
 
 // Stessa palette della legenda "Accessibilità", applicata ai punti immobile
 const RAMP_LIVELLO = ['match', ['get', 'Livello accessibilita']];
