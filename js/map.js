@@ -351,20 +351,23 @@ map.on('mouseleave', 'peba-punti-circle', () => { hoverPopup.remove(); });
 
 function showPebaDetail(p, lngLat) {
   const anagrafica = rpSec('Anagrafica');
+  if (p.Codice) anagrafica.appendChild(rpRow('Codice', esc(p.Codice)));
   anagrafica.appendChild(rpRow('Nome', esc(p['Nome Immobile']) || esc(p.Gruppo) || '(senza nome)'));
   anagrafica.appendChild(rpRow('Indirizzo', esc(p.Indirizzo)));
   anagrafica.appendChild(rpRow('Gruppo', esc(p.Gruppo)));
   if (p.Categoria) anagrafica.appendChild(rpRow('Categoria', esc(p.Categoria)));
-  if (p.Circoscrizione) anagrafica.appendChild(rpRow('Circoscrizione', esc(p.Circoscrizione)));
-  if (p.Quartiere) anagrafica.appendChild(rpRow('Quartiere', esc(p.Quartiere)));
-  if (p.UPL) anagrafica.appendChild(rpRow('UPL', esc(p.UPL)));
+
+  const territorio = rpSec('Territorio');
+  if (p.Circoscrizione) territorio.appendChild(rpRow('Circoscrizione', esc(p.Circoscrizione)));
+  if (p.Quartiere) territorio.appendChild(rpRow('Quartiere', esc(p.Quartiere)));
+  if (p.UPL) territorio.appendChild(rpRow('UPL', esc(p.UPL)));
 
   const accessibilita = rpSec('Accessibilità');
   accessibilita.appendChild(rpBadgeRow('Livello', esc(p['Livello accessibilita']) || 'non valutabile', badgeColori(p['Livello accessibilita'])));
   accessibilita.appendChild(rpRow('Punteggio', p.Punteggio != null ? `${fmtNum(p.Punteggio, 0)} / 100` : 'n/d'));
   if (p.Rilevanza) accessibilita.appendChild(rpRow('Rilevanza', esc(p.Rilevanza)));
 
-  const sections = [anagrafica, accessibilita];
+  const sections = [anagrafica, territorio, accessibilita];
 
   if (p['Criticità Rilevate']) {
     const crit = rpSec('Criticità rilevate');
