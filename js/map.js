@@ -91,7 +91,7 @@ map.on('load', () => {
   }
 });
 
-// ── Colori per livello di accessibilità (usati solo nel pannello dettaglio/filtri, non per la classificazione in mappa) ──
+// ── Colori per livello di accessibilità (classificazione mappa, legenda e pannello dettaglio) ──
 const COLORI_ACCESSIBILITA = {
   'Accessibile': '#2b8a3e',
   'Parzialmente accessibile': '#94c93d',
@@ -140,14 +140,14 @@ function updateSchedaUrl(codice) {
 }
 window.updateSchedaUrl = updateSchedaUrl;
 
-const RAMP_GRUPPO = ['match', ['get', 'Gruppo']];
-Object.entries(COLORI_GRUPPO).forEach(([k, v]) => { RAMP_GRUPPO.push(k, v); });
-RAMP_GRUPPO.push('#999999');
+// Stessa palette della legenda "Accessibilità", applicata ai punti immobile
+const RAMP_LIVELLO = ['match', ['get', 'Livello accessibilita']];
+Object.entries(COLORI_ACCESSIBILITA).forEach(([k, v]) => { RAMP_LIVELLO.push(k, v); });
+RAMP_LIVELLO.push(COLORI_ACCESSIBILITA['Non valutabile']);
 
-// Stessa palette della legenda "Gruppo", applicata al tipo di via/percorso PEBA
-const RAMP_GRUPPO_VIA = ['match', ['get', 'peba_tipo']];
-Object.entries(COLORI_GRUPPO).forEach(([k, v]) => { RAMP_GRUPPO_VIA.push(k, v); });
-RAMP_GRUPPO_VIA.push('#999999');
+// Le vie/percorsi PEBA non hanno un livello di accessibilità proprio (dato censito
+// solo sugli immobili): restano su un colore neutro, distinto dalla rete di sfondo
+const COLORE_VIA_PEBA = '#3e548e';
 
 map.on('load', () => {
   // ── Immobili PEBA — sorgente piccola (144 KB), caricata subito ──────────
@@ -156,7 +156,7 @@ map.on('load', () => {
     id: 'peba-punti-circle', type: 'circle', source: 'peba-punti',
     paint: {
       'circle-radius': ['interpolate', ['linear'], ['zoom'], 11, 4, 16, 9],
-      'circle-color': RAMP_GRUPPO,
+      'circle-color': RAMP_LIVELLO,
       'circle-stroke-width': 1,
       'circle-stroke-color': '#ffffff',
       'circle-opacity': 0.9,
@@ -184,13 +184,13 @@ map.on('load', () => {
       },
     }, 'peba-punti-circle');
 
-    // Vie/percorsi PEBA — colorate per tipo, stessa palette della legenda
+    // Vie/percorsi PEBA — colore neutro (nessun dato di accessibilità per via)
     map.addLayer({
       id: 'rete-archi-peba-line', type: 'line', source: 'rete-archi',
       filter: ['==', ['get', 'peba_via'], true],
       layout: { 'line-cap': 'round' },
       paint: {
-        'line-color': RAMP_GRUPPO_VIA,
+        'line-color': COLORE_VIA_PEBA,
         'line-width': ['interpolate', ['linear'], ['zoom'], 11, 1.2, 16, 4],
         'line-opacity': 0.9,
       },
@@ -433,7 +433,7 @@ function showPebaDetail(p, lngLat) {
   const anagrafica = rpSec('Anagrafica');
   if (p.Codice) anagrafica.appendChild(rpBadgeRow('Codice', esc(p.Codice), badgeColoriGruppo(p.Gruppo)));
   anagrafica.appendChild(rpRow('Nome', esc(p['Nome Immobile']) || esc(p.Gruppo) || '(senza nome)'));
-  anagrafica.appendChild(rpRow('Indirizzo', esc(p.Indirizzo)));
+  anagrafica.appendChild(rpRow('Indirizzo', esc(p.Indirizzo) || esc(p['Nome/Localizzazione'])));
   anagrafica.appendChild(rpRow('Gruppo', esc(p.Gruppo)));
   if (p.Categoria) anagrafica.appendChild(rpRow('Categoria', esc(p.Categoria)));
   if (p['Contesto urbano']) anagrafica.appendChild(rpRow('Contesto urbano', esc(p['Contesto urbano'])));

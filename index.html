@@ -89,18 +89,13 @@
 <!-- ═══ LEGENDA ═══ -->
 <div id="map-legends">
   <div class="map-legend visible" id="legend-gruppo">
-    <div class="map-legend-title" id="legend-gruppo-toggle"><span class="legend-toggle-arrow">▾</span>Gruppo <span class="map-legend-hint">(clic per filtrare)</span></div>
+    <div class="map-legend-title" id="legend-gruppo-toggle"><span class="legend-toggle-arrow">▾</span>Accessibilità <span class="map-legend-hint">(clic per filtrare)</span></div>
     <div class="legend-rows">
-    <div class="legend-row" data-dim="gruppo" data-value="Percorso storico"><span class="legend-dot" style="background:#6d3ba0"></span><span class="legend-label">percorso storico</span><span class="legend-count"></span></div>
-    <div class="legend-row" data-dim="gruppo" data-value="Via cittadina"><span class="legend-dot" style="background:#3e548e"></span><span class="legend-label">via cittadina</span><span class="legend-count"></span></div>
-    <div class="legend-row" data-dim="gruppo" data-value="Scuola"><span class="legend-dot" style="background:#ef9ffc"></span><span class="legend-label">scuola</span><span class="legend-count"></span></div>
-    <div class="legend-row" data-dim="gruppo" data-value="Asilo"><span class="legend-dot" style="background:#c49bfc"></span><span class="legend-label">asilo</span><span class="legend-count"></span></div>
-    <div class="legend-row" data-dim="gruppo" data-value="Sede amministrativa/istituzionale"><span class="legend-dot" style="background:#a4d060"></span><span class="legend-label">sede amministrativa/istituzionale</span><span class="legend-count"></span></div>
-    <div class="legend-row" data-dim="gruppo" data-value="Area verde"><span class="legend-dot" style="background:#55af5e"></span><span class="legend-label">area verde</span><span class="legend-count"></span></div>
-    <div class="legend-row" data-dim="gruppo" data-value="Sito UNESCO (edificio)"><span class="legend-dot" style="background:#916a39"></span><span class="legend-label">sito UNESCO edificio</span><span class="legend-count"></span></div>
-    <div class="legend-row" data-dim="gruppo" data-value="Percorso UNESCO"><span class="legend-dot" style="background:#e6370c"></span><span class="legend-label">percorso UNESCO</span><span class="legend-count"></span></div>
-    <div class="legend-row" data-dim="gruppo" data-value="Piazza"><span class="legend-dot" style="background:#db8337"></span><span class="legend-label">piazza</span><span class="legend-count"></span></div>
-    <div class="legend-row" data-dim="gruppo" data-value="Museo"><span class="legend-dot" style="background:#e336b7"></span><span class="legend-label">museo</span><span class="legend-count"></span></div>
+    <div class="legend-row" data-dim="livello" data-value="Accessibile"><span class="legend-dot" style="background:#2b8a3e"></span><span class="legend-label">accessibile</span><span class="legend-count"></span></div>
+    <div class="legend-row" data-dim="livello" data-value="Parzialmente accessibile"><span class="legend-dot" style="background:#94c93d"></span><span class="legend-label">parzialmente accessibile</span><span class="legend-count"></span></div>
+    <div class="legend-row" data-dim="livello" data-value="Parzialmente inaccessibile"><span class="legend-dot" style="background:#f0b429"></span><span class="legend-label">parzialmente inaccessibile</span><span class="legend-count"></span></div>
+    <div class="legend-row" data-dim="livello" data-value="Inaccessibile"><span class="legend-dot" style="background:#c92a2a"></span><span class="legend-label">inaccessibile</span><span class="legend-count"></span></div>
+    <div class="legend-row" data-dim="livello" data-value="Non valutabile"><span class="legend-dot" style="background:#999999"></span><span class="legend-label">non valutabile</span><span class="legend-count"></span></div>
     </div>
   </div>
 </div>
@@ -398,14 +393,14 @@
         <img src="img/guida/filtri.png" alt="Pannello filtri geografici e tematici" class="guida-shot" onclick="openPhotoModal(['img/guida/filtri.png'], 0)" />
       </div>
       <div class="panel-section">
-        <h3>Legenda e filtro rapido per gruppo</h3>
+        <h3>Legenda e filtro rapido per accessibilità</h3>
         <p class="panel-note">
-          In basso a sinistra sulla mappa c'è la legenda dei gruppi, ciascuno con un colore
-          proprio. Clicca su una voce della legenda per mostrare/nascondere quel gruppo
-          direttamente sulla mappa, senza passare dal pannello filtri. Su schermi piccoli la
-          legenda è comprimibile: tocca il titolo per aprirla o chiuderla.
+          In basso a sinistra sulla mappa c'è la legenda dei livelli di accessibilità, ciascuno
+          con un colore proprio. Clicca su una voce della legenda per mostrare/nascondere quel
+          livello direttamente sulla mappa, senza passare dal pannello filtri. Su schermi piccoli
+          la legenda è comprimibile: tocca il titolo per aprirla o chiuderla.
         </p>
-        <img src="img/guida/legenda.png" alt="Legenda dei gruppi sulla mappa" class="guida-shot" onclick="openPhotoModal(['img/guida/legenda.png'], 0)" />
+        <img src="img/guida/legenda.png" alt="Legenda dei livelli di accessibilità sulla mappa" class="guida-shot" onclick="openPhotoModal(['img/guida/legenda.png'], 0)" />
       </div>
       <div class="panel-section">
         <h3>Navigare la mappa</h3>
