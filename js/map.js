@@ -113,6 +113,33 @@ const COLORI_GRUPPO = {
   'Museo': '#e336b7',
   'Sito UNESCO (edificio)': '#916a39',
 };
+// Icona (paths SVG, stroke, viewBox 24) per Gruppo — usata nell'header della scheda
+const DEFAULT_ICON_PATHS = '<path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>';
+const ICONE_GRUPPO = {
+  'Asilo': '<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>',
+  'Scuola': '<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>',
+  'Sede amministrativa/istituzionale': '<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>',
+  'Museo': '<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>',
+  'Sito UNESCO (edificio)': '<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>',
+  'Piazza': '<rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>',
+  'Area verde': '<circle cx="12" cy="9" r="6"/><line x1="12" y1="15" x2="12" y2="21"/>',
+  'Percorso UNESCO': '<polygon points="12 2 19 21 12 17 5 21 12 2"/>',
+  'Percorso storico': '<polygon points="12 2 19 21 12 17 5 21 12 2"/>',
+  'Via cittadina': '<polygon points="12 2 19 21 12 17 5 21 12 2"/>',
+};
+function rpIconePerGruppo(gruppo) {
+  return ICONE_GRUPPO[gruppo] || DEFAULT_ICON_PATHS;
+}
+
+// Permalink scheda (?scheda=Codice) — usa un search param, non tocca l'hash di MapLibre
+function updateSchedaUrl(codice) {
+  const url = new URL(window.location.href);
+  if (codice) url.searchParams.set('scheda', codice);
+  else url.searchParams.delete('scheda');
+  history.replaceState(null, '', url);
+}
+window.updateSchedaUrl = updateSchedaUrl;
+
 const RAMP_GRUPPO = ['match', ['get', 'Gruppo']];
 Object.entries(COLORI_GRUPPO).forEach(([k, v]) => { RAMP_GRUPPO.push(k, v); });
 RAMP_GRUPPO.push('#999999');
@@ -123,35 +150,8 @@ Object.entries(COLORI_GRUPPO).forEach(([k, v]) => { RAMP_GRUPPO_VIA.push(k, v); 
 RAMP_GRUPPO_VIA.push('#999999');
 
 map.on('load', () => {
-  // ── Sorgenti ──────────────────────────────────────────────────────────
-  map.addSource('rete-archi', { type: 'geojson', data: DATA.reteArchi });
+  // ── Immobili PEBA — sorgente piccola (144 KB), caricata subito ──────────
   map.addSource('peba-punti', { type: 'geojson', data: DATA.peba });
-
-  // ── Rete stradale — sfondo di riferimento, non interattiva ──────────────
-  map.addLayer({
-    id: 'rete-archi-line', type: 'line', source: 'rete-archi',
-    filter: ['!=', ['get', 'peba_via'], true],
-    layout: { 'line-cap': 'round' },
-    paint: {
-      'line-color': '#9aa5c4',
-      'line-width': ['interpolate', ['linear'], ['zoom'], 11, 0.4, 16, 1.6],
-      'line-opacity': 0,
-    },
-  });
-
-  // ── Vie/percorsi PEBA — colorate per tipo, stessa palette della legenda ──
-  map.addLayer({
-    id: 'rete-archi-peba-line', type: 'line', source: 'rete-archi',
-    filter: ['==', ['get', 'peba_via'], true],
-    layout: { 'line-cap': 'round' },
-    paint: {
-      'line-color': RAMP_GRUPPO_VIA,
-      'line-width': ['interpolate', ['linear'], ['zoom'], 11, 1.2, 16, 4],
-      'line-opacity': 0.9,
-    },
-  });
-
-  // ── Immobili PEBA (colore = livello accessibilità) ───────────────────────
   map.addLayer({
     id: 'peba-punti-circle', type: 'circle', source: 'peba-punti',
     paint: {
@@ -165,6 +165,37 @@ map.on('load', () => {
   });
 
   updateMapScale();
+
+  // ── Rete stradale — sorgente grande (~7.7 MB), differita dopo il primo
+  // rendering per non contendere banda/priorità col caricamento dei punti ──
+  map.once('idle', () => {
+    if (map.getSource('rete-archi')) return;
+    map.addSource('rete-archi', { type: 'geojson', data: DATA.reteArchi });
+
+    // Rete stradale — sfondo di riferimento, non interattiva
+    map.addLayer({
+      id: 'rete-archi-line', type: 'line', source: 'rete-archi',
+      filter: ['!=', ['get', 'peba_via'], true],
+      layout: { 'line-cap': 'round' },
+      paint: {
+        'line-color': '#9aa5c4',
+        'line-width': ['interpolate', ['linear'], ['zoom'], 11, 0.4, 16, 1.6],
+        'line-opacity': 0,
+      },
+    }, 'peba-punti-circle');
+
+    // Vie/percorsi PEBA — colorate per tipo, stessa palette della legenda
+    map.addLayer({
+      id: 'rete-archi-peba-line', type: 'line', source: 'rete-archi',
+      filter: ['==', ['get', 'peba_via'], true],
+      layout: { 'line-cap': 'round' },
+      paint: {
+        'line-color': RAMP_GRUPPO_VIA,
+        'line-width': ['interpolate', ['linear'], ['zoom'], 11, 1.2, 16, 4],
+        'line-opacity': 0.9,
+      },
+    }, 'peba-punti-circle');
+  });
 });
 
 // ── Click → pannello destro (dettaglio immobile) ────────────────────────────
@@ -204,10 +235,34 @@ function badgeColori(livello) {
   return { bg: `${col}22`, text: col, border: `${col}88` };
 }
 
+// Barra orizzontale del punteggio (0-100), colorata come il badge livello
+function rpScoreBar(value, colorHex) {
+  const wrap = document.createElement('div'); wrap.className = 'rp-score-bar';
+  const track = document.createElement('div'); track.className = 'rp-score-bar-track';
+  const fill = document.createElement('div'); fill.className = 'rp-score-bar-fill';
+  fill.style.width = `${Math.max(0, Math.min(100, value))}%`;
+  fill.style.background = colorHex;
+  track.appendChild(fill);
+  wrap.appendChild(track);
+  return wrap;
+}
+
+// Lista puntata delle criticità (il campo dato è testo con voci separate da ";")
+function rpCriticitaList(testo) {
+  const voci = testo.split(';').map((v) => v.trim()).filter(Boolean);
+  const ul = document.createElement('ul'); ul.className = 'rp-crit-list';
+  voci.forEach((v) => {
+    const li = document.createElement('li');
+    li.textContent = v;
+    ul.appendChild(li);
+  });
+  return ul;
+}
+
 // Galleria foto: img/foto/<Codice>/01.{jpg|png} .. NN (NN = "N. foto rilievo")
 function rpGalleriaFoto(codice, nFoto) {
   if (!nFoto || nFoto <= 0) return null;
-  const s = rpSec('Foto sopralluogo');
+  const s = rpSec(`Foto sopralluogo (${nFoto})`);
   const grid = document.createElement('div');
   grid.className = 'rp-photo-grid';
   const srcs = [];
@@ -216,7 +271,7 @@ function rpGalleriaFoto(codice, nFoto) {
     const base = `img/foto/${encodeURIComponent(codice)}/${num}`;
     const btn = document.createElement('button');
     btn.type = 'button';
-    btn.className = 'rp-photo-thumb';
+    btn.className = i === 1 ? 'rp-photo-thumb rp-photo-thumb-cover' : 'rp-photo-thumb';
     const img = document.createElement('img');
     img.loading = 'lazy'; img.alt = `Foto ${i} — ${esc(codice)}`;
     img.dataset.tried = 'jpg';
@@ -345,9 +400,29 @@ map.on('mousemove', 'peba-punti-circle', (e) => {
   const nome = esc(f.properties['Nome Immobile']) || esc(f.properties.Gruppo) || '(senza nome)';
   const codice = esc(f.properties.Codice);
   const label = codice ? `${codice} – ${nome}` : nome;
-  hoverPopup.setLngLat(e.lngLat).setHTML(`<div class="mp-title">${label}</div>`).addTo(map);
+  const colGruppo = COLORI_GRUPPO[f.properties.Gruppo] || '#999999';
+  const livello = f.properties['Livello accessibilita'];
+  const colLivello = badgeColori(livello);
+  const badgeHtml = livello
+    ? `<span class="mp-badge" style="background:${colLivello.bg};color:${colLivello.text};border-color:${colLivello.border};">${esc(livello)}</span>`
+    : '';
+  hoverPopup.setLngLat(e.lngLat).setHTML(`
+    <div class="mp-title"><span class="mp-dot" style="background:${colGruppo};"></span>${label}</div>
+    ${badgeHtml}
+  `).addTo(map);
 });
 map.on('mouseleave', 'peba-punti-circle', () => { hoverPopup.remove(); });
+
+// Media punteggio della circoscrizione di p, calcolata sui punti già caricati per la ricerca (PF_FEATURES, filters.js)
+function mediaPunteggioCircoscrizione(circoscrizione) {
+  if (!circoscrizione || typeof PF_FEATURES === 'undefined' || !PF_FEATURES.length) return null;
+  const vals = PF_FEATURES
+    .map((f) => f.p)
+    .filter((pp) => pp.Circoscrizione === circoscrizione && pp.Punteggio != null)
+    .map((pp) => pp.Punteggio);
+  if (!vals.length) return null;
+  return vals.reduce((a, b) => a + b, 0) / vals.length;
+}
 
 function showPebaDetail(p, lngLat) {
   const anagrafica = rpSec('Anagrafica');
@@ -356,6 +431,8 @@ function showPebaDetail(p, lngLat) {
   anagrafica.appendChild(rpRow('Indirizzo', esc(p.Indirizzo)));
   anagrafica.appendChild(rpRow('Gruppo', esc(p.Gruppo)));
   if (p.Categoria) anagrafica.appendChild(rpRow('Categoria', esc(p.Categoria)));
+  if (p['Contesto urbano']) anagrafica.appendChild(rpRow('Contesto urbano', esc(p['Contesto urbano'])));
+  if (p.Elemento) anagrafica.appendChild(rpRow('Elemento', esc(p.Elemento)));
 
   const territorio = rpSec('Territorio');
   if (p.Circoscrizione) territorio.appendChild(rpRow('Circoscrizione', esc(p.Circoscrizione)));
@@ -365,21 +442,37 @@ function showPebaDetail(p, lngLat) {
   const accessibilita = rpSec('Accessibilità');
   accessibilita.appendChild(rpBadgeRow('Livello', esc(p['Livello accessibilita']) || 'non valutabile', badgeColori(p['Livello accessibilita'])));
   accessibilita.appendChild(rpRow('Punteggio', p.Punteggio != null ? `${fmtNum(p.Punteggio, 0)} / 100` : 'n/d'));
+  if (p.Punteggio != null) {
+    const col = COLORI_ACCESSIBILITA[p['Livello accessibilita']] || COLORI_ACCESSIBILITA['Non valutabile'];
+    accessibilita.appendChild(rpScoreBar(p.Punteggio, col));
+  }
   if (p.Rilevanza) accessibilita.appendChild(rpRow('Rilevanza', esc(p.Rilevanza)));
+  if (p['Non valutabile'] === 'Si') {
+    accessibilita.appendChild(rpBadgeRow('Dato', 'Non valutabile', { bg: '#99999922', text: '#666', border: '#99999988' }));
+  }
+  const media = mediaPunteggioCircoscrizione(p.Circoscrizione);
+  if (media != null && p.Punteggio != null) {
+    const diff = p.Punteggio - media;
+    const segno = diff >= 0 ? '+' : '';
+    accessibilita.appendChild(rpRow(`Media circ. ${esc(p.Circoscrizione)}`, `${fmtNum(media, 0)} (${segno}${fmtNum(diff, 0)})`));
+  }
 
   const sections = [anagrafica, territorio, accessibilita];
 
   if (p['Criticità Rilevate']) {
     const crit = rpSec('Criticità rilevate');
-    const txt = document.createElement('div');
-    txt.className = 'rp-punto-note';
-    txt.textContent = p['Criticità Rilevate'];
-    crit.appendChild(txt);
+    crit.appendChild(rpCriticitaList(p['Criticità Rilevate']));
     sections.push(crit);
   }
 
   const foto = rpGalleriaFoto(p.Codice, p['N. foto rilievo']);
   if (foto) sections.push(foto);
+
+  const iconEl = document.getElementById('rp-punto-icon');
+  if (iconEl) {
+    iconEl.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${rpIconePerGruppo(p.Gruppo)}</svg>`;
+  }
+  updateSchedaUrl(p.Codice || null);
 
   openFeaturePanel(esc(p['Nome Immobile']) || esc(p.Gruppo) || '(senza nome)', lngLat, sections);
 }

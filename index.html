@@ -24,6 +24,9 @@
   <meta property="og:type" content="website">
   <meta property="og:title" content="PEBA Palermo — Mappa accessibilità immobili comunali - Piano di Eliminazione delle Barriere Architettoniche">
   <meta property="og:description" content="PalermoHub — Contenitore di mappe su Palermo realizzato da OpenDataSicilia.it">
+  <meta property="og:image" content="img/guida/mappa.png">
+  <meta property="og:image:width" content="1400">
+  <meta property="og:image:height" content="900">
   
   
 <!-- Global site tag (gtag.js) - Google Analytics -->
@@ -112,9 +115,9 @@
       </svg>
     </span>
     <input type="text" id="pf-search-input" placeholder="Cerca immobile, indirizzo…" autocomplete="off">
-    <button id="pf-search-clear" style="display:none">&#x2715;</button>
+    <button id="pf-search-clear" style="display:none" aria-label="Cancella ricerca">&#x2715;</button>
     <div class="pf-sep"></div>
-    <button id="pf-filter-btn" title="Filtri geografici e tematici">
+    <button id="pf-filter-btn" title="Filtri geografici e tematici" aria-label="Filtri geografici e tematici">
       <svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14">
         <path d="M10 18h4v-2h-4v2zM3 6v2h18V6H3zm3 7h12v-2H6v2z"/>
       </svg>
@@ -129,7 +132,7 @@
 <div id="pf-modal">
   <div class="pfm-header">
     <h3>Filtri</h3>
-    <button id="pf-modal-close" title="Chiudi">&#x2715;</button>
+    <button id="pf-modal-close" title="Chiudi" aria-label="Chiudi filtri">&#x2715;</button>
   </div>
 
   <div class="pfm-group">
@@ -165,7 +168,7 @@
 
 <!-- ═══ PANNELLO DESTRA ═══ -->
 <div id="rp-wrap">
-  <button id="rp-toggle" title="Immobile selezionato — apri/chiudi">
+  <button id="rp-toggle" title="Immobile selezionato — apri/chiudi" aria-label="Apri/chiudi pannello immobile selezionato">
     <svg id="rp-toggle-icon" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
       <polyline points="15 18 9 12 15 6"/>
     </svg>
@@ -173,7 +176,7 @@
 
   <div id="right-panel">
 
-    <button id="rp-mobile-close" title="Chiudi pannello">
+    <button id="rp-mobile-close" title="Chiudi pannello" aria-label="Chiudi pannello">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
     </button>
 
@@ -686,7 +689,7 @@
 
 <!-- Attribuzioni -->
 <div id="attrib-wrap">
-  <button id="attrib-btn" title="Attribuzioni" aria-expanded="false" aria-controls="attrib-panel"></button>
+  <button id="attrib-btn" title="Attribuzioni" aria-label="Attribuzioni" aria-expanded="false" aria-controls="attrib-panel"></button>
   <div id="attrib-panel" hidden>
     <span id="attrib-text"></span>
   </div>

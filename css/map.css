@@ -1687,6 +1687,38 @@ body:has(#rp-wrap.open) #attrib-wrap {
 .rp-punto-row-label { color: #1f2937; flex: 1; }
 .rp-punto-row-value { color: #1a2a50; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
 
+/* Barra punteggio (0-100) */
+.rp-score-bar { margin: 2px 0 6px; }
+.rp-score-bar-track {
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(30, 60, 160, 0.08);
+  overflow: hidden;
+}
+.rp-score-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+/* Lista criticità rilevate */
+.rp-crit-list { margin: 0; padding: 0; list-style: none; }
+.rp-crit-list li {
+  position: relative;
+  padding: 3px 0 3px 16px;
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: #1a2a50;
+}
+.rp-crit-list li::before {
+  content: '⚠';
+  position: absolute;
+  left: 0;
+  top: 3px;
+  font-size: 10px;
+  color: #e07800;
+}
+
 /* Badge stabilità/costruibilità */
 .rp-punto-badge {
   display: inline-block;
@@ -1697,22 +1729,6 @@ body:has(#rp-wrap.open) #attrib-wrap {
   border: 1px solid transparent;
   white-space: nowrap;
 }
-
-/* Grid indici 4 celle */
-.rp-punto-idx-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 6px;
-  margin-top: 4px;
-}
-.rp-punto-idx-cell {
-  background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%);
-  border-radius: 6px;
-  padding: 6px 4px;
-  text-align: center;
-}
-.rp-punto-idx-val { font-size: 13px; font-weight: 700; color: #1a2a50; }
-.rp-punto-idx-key { font-size: 9px; color: #8898c8; margin-top: 2px; font-weight: 600; }
 
 /* Intro analisi (pannello dx) */
 .rp-intro {
@@ -2726,12 +2742,11 @@ body:has(#rp-wrap.open) #attrib-wrap {
 [data-theme="dark"] .rp-punto-sec-label { color: #7080a8; }
 [data-theme="dark"] .rp-punto-row-label { color: #7080a8; }
 [data-theme="dark"] .rp-punto-row-value { color: #c0cce8; }
+[data-theme="dark"] .rp-score-bar-track { background: rgba(70,110,220,0.15); }
+[data-theme="dark"] .rp-crit-list li { color: #c0cce8; }
 [data-theme="dark"] .rp-punto-coords { color: #7080a8; }
 [data-theme="dark"] #rp-punto-icon { color: #5080e0; }
 [data-theme="dark"] #rp-punto-title { color: #c0cce8; }
-[data-theme="dark"] .rp-punto-idx-cell { background: linear-gradient(135deg, #162040 0%, #1a2a4a 100%); }
-[data-theme="dark"] .rp-punto-idx-val { color: #c0cce8; }
-[data-theme="dark"] .rp-punto-idx-key { color: #485a82; }
 [data-theme="dark"] #rp-punto-body { scrollbar-color: #2a3a60 transparent; }
 [data-theme="dark"] #rp-punto-body::-webkit-scrollbar-thumb { background: #2a3a60; }
 

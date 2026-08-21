@@ -54,4 +54,5 @@ document.getElementById('panel-nav')?.addEventListener('click', (e) => {
 document.getElementById('rp-punto-back').addEventListener('click', () => {
   document.getElementById('rp-punto').style.display = 'none';
   document.getElementById('rp-gallery').style.display = '';
+  if (typeof window.updateSchedaUrl === 'function') window.updateSchedaUrl(null);
 });

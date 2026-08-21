@@ -237,6 +237,19 @@ fetch(DATA.peba).then((r) => r.json()).then((geo) => {
   const start = () => { pfRenderAll(); };
   if (map.loaded()) start(); else map.on('load', start);
 
+  // Permalink: ?scheda=Codice apre direttamente la scheda corrispondente
+  const codiceUrl = new URLSearchParams(window.location.search).get('scheda');
+  if (codiceUrl) {
+    const match = PF_FEATURES.find((f) => f.p.Codice === codiceUrl);
+    if (match) {
+      const openScheda = () => {
+        map.flyTo({ center: [match.lng, match.lat], zoom: Math.max(map.getZoom(), 16) });
+        window.showPebaDetail(match.p, { lat: match.lat, lng: match.lng });
+      };
+      if (map.loaded()) openScheda(); else map.on('load', openScheda);
+    }
+  }
+
   // Select cascading
   ['circ', 'quart', 'upl'].forEach((dim) => {
     const propKey = dim === 'circ' ? 'Circoscrizione' : dim === 'quart' ? 'Quartiere' : 'UPL';
