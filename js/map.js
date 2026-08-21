@@ -235,6 +235,11 @@ function badgeColori(livello) {
   return { bg: `${col}22`, text: col, border: `${col}88` };
 }
 
+function badgeColoriGruppo(gruppo) {
+  const col = COLORI_GRUPPO[gruppo] || '#999999';
+  return { bg: `${col}22`, text: col, border: `${col}88` };
+}
+
 // Barra orizzontale del punteggio (0-100), colorata come il badge livello
 function rpScoreBar(value, colorHex) {
   const wrap = document.createElement('div'); wrap.className = 'rp-score-bar';
@@ -426,7 +431,7 @@ function mediaPunteggioCircoscrizione(circoscrizione) {
 
 function showPebaDetail(p, lngLat) {
   const anagrafica = rpSec('Anagrafica');
-  if (p.Codice) anagrafica.appendChild(rpRow('Codice', esc(p.Codice)));
+  if (p.Codice) anagrafica.appendChild(rpBadgeRow('Codice', esc(p.Codice), badgeColoriGruppo(p.Gruppo)));
   anagrafica.appendChild(rpRow('Nome', esc(p['Nome Immobile']) || esc(p.Gruppo) || '(senza nome)'));
   anagrafica.appendChild(rpRow('Indirizzo', esc(p.Indirizzo)));
   anagrafica.appendChild(rpRow('Gruppo', esc(p.Gruppo)));
