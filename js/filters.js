@@ -129,6 +129,7 @@ function pfBuildLegend(dim) {
       const set = pfState[d];
       if (set.has(v)) set.delete(v); else set.add(v);
       pfRenderAll();
+      pfZoomToMatched();
     });
   });
   pfUpdateLegend();
@@ -195,6 +196,17 @@ function pfApplyMapFilter() {
   pfLastMatched = matched;
 }
 let pfLastMatched = [];
+
+// ── Zoom automatico sugli immobili filtrati ────────────────────────────────
+function pfZoomToMatched() {
+  if (!pfLastMatched.length) return;
+  let minLng = Infinity, minLat = Infinity, maxLng = -Infinity, maxLat = -Infinity;
+  pfLastMatched.forEach(({ lng, lat }) => {
+    minLng = Math.min(minLng, lng); maxLng = Math.max(maxLng, lng);
+    minLat = Math.min(minLat, lat); maxLat = Math.max(maxLat, lat);
+  });
+  map.fitBounds([[minLng, minLat], [maxLng, maxLat]], { padding: 60, maxZoom: 17 });
+}
 
 // ── Render completo (chiamato ad ogni cambio stato) ───────────────────────
 function pfRenderAll() {
@@ -317,15 +329,7 @@ fetch(DATA.peba).then((r) => r.json()).then((geo) => {
   overlay.addEventListener('click', closeModal);
   document.getElementById('pf-reset').addEventListener('click', pfResetAll);
 
-  document.getElementById('pf-zoom').addEventListener('click', () => {
-    if (!pfLastMatched.length) return;
-    let minLng = Infinity, minLat = Infinity, maxLng = -Infinity, maxLat = -Infinity;
-    pfLastMatched.forEach(({ lng, lat }) => {
-      minLng = Math.min(minLng, lng); maxLng = Math.max(maxLng, lng);
-      minLat = Math.min(minLat, lat); maxLat = Math.max(maxLat, lat);
-    });
-    map.fitBounds([[minLng, minLat], [maxLng, maxLat]], { padding: 60, maxZoom: 17 });
-  });
+  document.getElementById('pf-zoom').addEventListener('click', pfZoomToMatched);
 
   // Legenda collassabile su mobile (aperta di default su desktop)
   const legendGruppo = document.getElementById('legend-gruppo');

@@ -24,10 +24,13 @@ function makeAttribNode(text, href) {
   return frag;
 }
 
+const OSM_TILES_LIGHT = ['https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}@2x.png'];
+const OSM_TILES_DARK = ['https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png'];
+
 const BASEMAPS = {
   osm: {
     type: 'raster',
-    tiles: ['https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}@2x.png'],
+    tiles: document.documentElement.getAttribute('data-theme') === 'dark' ? OSM_TILES_DARK : OSM_TILES_LIGHT,
     tileSize: 256,
     attribution: '© OpenStreetMap contributors © CartoDB',
     attributionNode: makeAttribNode('© OpenStreetMap contributors © CartoDB', 'https://www.openstreetmap.org/copyright'),
@@ -93,10 +96,10 @@ map.on('load', () => {
 
 // ── Colori per livello di accessibilità (classificazione mappa, legenda e pannello dettaglio) ──
 const COLORI_ACCESSIBILITA = {
-  'Accessibile': '#2b8a3e',
-  'Parzialmente accessibile': '#94c93d',
-  'Parzialmente inaccessibile': '#f0b429',
-  'Inaccessibile': '#c92a2a',
+  'Accessibile': '#0072b2',
+  'Parzialmente accessibile': '#56b4e9',
+  'Parzialmente inaccessibile': '#e69f00',
+  'Inaccessibile': '#d55e00',
   'Non valutabile': '#999999',
 };
 
@@ -283,14 +286,49 @@ function rpBadgeRow(label, text, colors) {
   r.appendChild(lEl); r.appendChild(badge); return r;
 }
 
+// Schiarisce un colore brand finché non raggiunge un contrasto WCAG AA (4.5:1)
+// sullo sfondo scuro del pannello (#0a1022). I colori brand sono tarati per il
+// tema chiaro: su sfondo quasi nero molti scendono sotto 3:1 senza questo aggiustamento.
+const DARK_PANEL_BG = [10, 16, 34];
+function relLuminance([r, g, b]) {
+  const f = (c) => { c /= 255; return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; };
+  return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b);
+}
+function contrastRatio(rgb1, rgb2) {
+  const l1 = relLuminance(rgb1), l2 = relLuminance(rgb2);
+  const [hi, lo] = l1 > l2 ? [l1, l2] : [l2, l1];
+  return (hi + 0.05) / (lo + 0.05);
+}
+function hexToRgb(hex) {
+  const n = parseInt(hex.slice(1), 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
+function rgbToHex([r, g, b]) {
+  return '#' + [r, g, b].map((c) => Math.round(c).toString(16).padStart(2, '0')).join('');
+}
+const _darkColorCache = {};
+function darkThemeSafeColor(hex) {
+  if (_darkColorCache[hex]) return _darkColorCache[hex];
+  let rgb = hexToRgb(hex);
+  for (let i = 0; i < 40 && contrastRatio(rgb, DARK_PANEL_BG) < 4.5; i++) {
+    rgb = rgb.map((c) => c + (255 - c) * 0.06);
+  }
+  const result = rgbToHex(rgb);
+  _darkColorCache[hex] = result;
+  return result;
+}
+function badgeTextColor(hex) {
+  return document.documentElement.getAttribute('data-theme') === 'dark' ? darkThemeSafeColor(hex) : hex;
+}
+
 function badgeColori(livello) {
   const col = COLORI_ACCESSIBILITA[livello] || COLORI_ACCESSIBILITA['Non valutabile'];
-  return { bg: `${col}22`, text: col, border: `${col}88` };
+  return { bg: `${col}22`, text: badgeTextColor(col), border: `${col}88` };
 }
 
 function badgeColoriGruppo(gruppo) {
   const col = COLORI_GRUPPO[gruppo] || '#999999';
-  return { bg: `${col}22`, text: col, border: `${col}88` };
+  return { bg: `${col}22`, text: badgeTextColor(col), border: `${col}88` };
 }
 
 // Barra orizzontale del punteggio (0-100), colorata come il badge livello
@@ -506,7 +544,7 @@ function showPebaDetail(p, lngLat) {
   accessibilita.appendChild(rpRow('Punteggio', p.Punteggio != null ? `${fmtNum(p.Punteggio, 0)} / 100` : 'n/d'));
   if (p.Punteggio != null) {
     const col = COLORI_ACCESSIBILITA[p['Livello accessibilita']] || COLORI_ACCESSIBILITA['Non valutabile'];
-    accessibilita.appendChild(rpScoreBar(p.Punteggio, col));
+    accessibilita.appendChild(rpScoreBar(p.Punteggio, badgeTextColor(col)));
   }
   if (p.Rilevanza) accessibilita.appendChild(rpRow('Rilevanza', esc(p.Rilevanza)));
   if (p['Non valutabile'] === 'Si') {
@@ -662,6 +700,27 @@ document.getElementById('tb-fullscreen').addEventListener('click', () => {
   if (!document.fullscreenElement) document.documentElement.requestFullscreen();
   else document.exitFullscreen();
 });
+
+// ── Tema scuro (attivato dall'inline script in <body>, qui solo il toggle) ─
+(function initDarkToggle() {
+  const btn = document.getElementById('tb-dark');
+  const isDark = () => document.documentElement.getAttribute('data-theme') === 'dark';
+  btn.classList.toggle('active', isDark());
+  btn.addEventListener('click', () => {
+    const on = !isDark();
+    if (on) document.documentElement.setAttribute('data-theme', 'dark');
+    else document.documentElement.removeAttribute('data-theme');
+    localStorage.setItem('peba-theme', on ? 'dark' : 'light');
+    btn.classList.toggle('active', on);
+
+    // La mappa base OSM è tile CartoDB: passa da light_all a dark_all.
+    // È una raster source, va ricreata (il tile url non è modificabile in place).
+    BASEMAPS.osm.tiles = on ? OSM_TILES_DARK : OSM_TILES_LIGHT;
+    if (map.getLayer('basemap-osm-layer')) map.removeLayer('basemap-osm-layer');
+    if (map.getSource('basemap-osm')) map.removeSource('basemap-osm');
+    if (map.isStyleLoaded()) renderBasemaps();
+  });
+})();
 
 // ── Attribuzioni collassabili ─────────────────────────────────────────────
 (function initAttrib() {
