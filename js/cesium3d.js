@@ -507,7 +507,7 @@
     if (typeof map !== 'undefined') map.resize();
   }
 
-  // ponytail: vista 3D disattivata su richiesta, bottone resta visibile ma inerte
+  toggleBtn.addEventListener('click', () => { active ? disable() : enable(); });
   window.pf3dDisable = () => { if (active) disable(); };
   window.pf3dRefreshMarkers = refreshMarkers;
 
