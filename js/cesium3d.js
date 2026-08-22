@@ -313,7 +313,13 @@
     fonte.forEach(({ p }) => {
       const feature = p.Codice && areeVerdiByCodice.get(p.Codice);
       if (!feature) return;
-      const colore = coloreMarker(p);
+      // I cimiteri joinano un punto PEBA con Gruppo "Sede amministrativa/
+      // istituzionale" (servizio pubblico valutato per l'accessibilità), ma
+      // geometricamente sono poligoni di verde/area cimiteriale: nel tema
+      // "Gruppo" vanno sempre colorati come "Area verde".
+      const colore = (typeof currentMapTheme !== 'undefined' && currentMapTheme === 'gruppo')
+        ? ((typeof coloriGruppoAttivi === 'function' ? coloriGruppoAttivi() : COLORI_GRUPPO)['Area verde'] || '#999999')
+        : coloreMarker(p);
       const poligoni = feature.geometry.type === 'MultiPolygon'
         ? feature.geometry.coordinates
         : [feature.geometry.coordinates];

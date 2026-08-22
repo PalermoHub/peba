@@ -205,11 +205,12 @@ function pfUpdateChips() {
 function pfApplyMapFilter() {
   const matched = PF_FEATURES.filter(({ p }) => pfMatchesAll(p));
   const codes = matched.map(({ p }) => p.Codice);
-  if (map.getLayer('peba-punti-circle')) {
-    map.setFilter('peba-punti-circle', codes.length
-      ? ['in', ['get', 'Codice'], ['literal', codes]]
-      : ['==', ['get', 'Codice'], '__nessuno__']);
-  }
+  const filterExpr = codes.length
+    ? ['in', ['get', 'Codice'], ['literal', codes]]
+    : ['==', ['get', 'Codice'], '__nessuno__'];
+  ['peba-punti-circle', 'peba-edifici-fill', 'peba-edifici-outline', 'peba-aree-verdi-fill', 'peba-aree-verdi-outline'].forEach((id) => {
+    if (map.getLayer(id)) map.setFilter(id, filterExpr);
+  });
   const rc = document.getElementById('pf-result-count');
   if (rc) rc.textContent = `${matched.length} di ${PF_FEATURES.length} immobili`;
   const zoomBtn = document.getElementById('pf-zoom');

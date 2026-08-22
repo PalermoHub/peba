@@ -349,19 +349,25 @@ map.on('load', () => {
     map.once('idle', () => {
       if (map.getSource('peba-edifici')) return;
       const pebaByCodice = new Map(pebaGeo.features.map((f) => [f.properties.Codice, f.properties]));
-      const joinCodice = (geo) => {
+      // forceGruppo: dati/peba_aree_verdi.geojson contiene anche i cimiteri, il
+      // cui punto PEBA è classificato Gruppo "Sede amministrativa/istituzionale"
+      // (è un servizio pubblico valutato per l'accessibilità, non un'area verde
+      // in senso stretto). Geometricamente sono comunque poligoni di verde/area
+      // cimiteriale, quindi nel tema "Gruppo" vanno sempre colorati come "Area
+      // verde" — il livello di accessibilità joinato resta invece quello vero.
+      const joinCodice = (geo, forceGruppo) => {
         geo.features.forEach((f) => {
           const pp = pebaByCodice.get(f.properties.Codice);
           if (pp) {
             f.properties['Livello accessibilita'] = pp['Livello accessibilita'];
-            f.properties.Gruppo = pp.Gruppo;
+            f.properties.Gruppo = forceGruppo || pp.Gruppo;
           }
         });
         return geo;
       };
       Promise.all([
-        fetch(DATA.pebaEdifici).then((r) => r.json()).then(joinCodice),
-        fetch(DATA.pebaAreeVerdi).then((r) => r.json()).then(joinCodice),
+        fetch(DATA.pebaEdifici).then((r) => r.json()).then((g) => joinCodice(g)),
+        fetch(DATA.pebaAreeVerdi).then((r) => r.json()).then((g) => joinCodice(g, 'Area verde')),
       ]).then(([edificiGeo, areeVerdiGeo]) => {
         // Nascosti finché l'utente non li attiva col toggle "Poligoni" in toolbar
         // (in 3D restano invece sempre attivi, cesium3d.js non ha questo toggle).
@@ -402,6 +408,11 @@ map.on('load', () => {
             'line-opacity': lineOp,
           },
         }, 'peba-punti-circle');
+
+        // Applica subito il filtro Gruppo/Livello/ricerca già attivo (i layer
+        // sono arrivati dopo il primo pfRenderAll, altrimenti mostrerebbero
+        // edifici/aree filtrati altrove finché l'utente non tocca un filtro)
+        if (typeof pfApplyMapFilter === 'function') pfApplyMapFilter();
       });
     });
 
