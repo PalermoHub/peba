@@ -32,21 +32,24 @@ function rpLinkPdf(codice) {
   const file = CODICE_PDF.get(codice);
   if (!file) return null;
   const s = rpSec('Scheda PDF');
+  const row = document.createElement('div');
+  row.className = 'rp-pdf-row';
   const href = `dati/pdf/${encodeURIComponent(file)}`;
   const a = document.createElement('a');
   a.href = href;
   a.target = '_blank';
   a.rel = 'noopener noreferrer';
   a.className = 'rp-pdf-link';
-  a.textContent = 'Apri scheda PDF originale';
-  s.appendChild(a);
+  a.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><text x="7" y="19" font-size="7" font-weight="700" stroke="none" fill="currentColor">PDF</text></svg><span>Apri scheda PDF originale</span>`;
+  row.appendChild(a);
   const dim = fmtDimensioneFile(PDF_SIZES.get(file));
   if (dim) {
     const nota = document.createElement('p');
     nota.className = 'rp-pdf-note';
     nota.textContent = `File pesante: ${dim} — il download potrebbe richiedere tempo.`;
-    s.appendChild(nota);
+    row.appendChild(nota);
   }
+  s.appendChild(row);
   return s;
 }
 

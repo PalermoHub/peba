@@ -1613,6 +1613,12 @@ body:has(#rp-wrap.open) #info-panel {
   margin-bottom: 10px;
 }
 
+.rp-pdf-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .rp-pdf-link {
   display: inline-flex;
   align-items: center;
@@ -1625,13 +1631,20 @@ body:has(#rp-wrap.open) #info-panel {
   background: #eef1fb;
   border-radius: 8px;
   padding: 7px 12px;
+  flex: none;
 }
 .rp-pdf-link:hover { background: #dde4f7; }
 
 .rp-pdf-note {
   font-size: 11px;
+  line-height: 1.4;
   color: #7a88ac;
-  margin: 6px 0 0;
+  margin: 0;
+  flex: 1;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .rp-text strong { color: #1a3898; }
