@@ -6,7 +6,19 @@
   const statusEl = document.getElementById('cesium-status');
   const mapEl = document.getElementById('map');
   const toggleBtn = document.getElementById('tb-3d');
+  const navEl = document.getElementById('pf3d-nav');
+  const compassEl = document.getElementById('pf3d-compass');
+  const compassRoseEl = document.getElementById('pf3d-compass-rose');
+  const compassResetEl = document.getElementById('pf3d-compass-reset');
+  const zoomTrackEl = document.getElementById('pf3d-zoom-track');
+  const zoomHandleEl = document.getElementById('pf3d-zoom-handle');
   if (!container || !toggleBtn) return;
+
+  // Range altitudine coperto dallo slider zoom (bussola/slider stile Cesium
+  // Navigation): da pochi metri sopra i tetti alla vista dell'intera città.
+  const NAV_ZOOM_MIN_H = 40;
+  const NAV_ZOOM_MAX_H = 4000000;
+  const NAV_ZOOM_TRACK_H = 74; // deve combaciare con l'altezza .pf3d-zoom-track in CSS
 
   const token = window.CESIUM_ION_TOKEN;
   let viewer = null;
@@ -76,6 +88,37 @@
       && (COLORI_ACCESSIBILITA[p['Livello accessibilita']] || COLORI_ACCESSIBILITA['Non valutabile'])) || '#999999';
   }
 
+  // ── Bussola + slider zoom (navigazione 3D stile Cesium Navigation) ───────
+  function updateNavUI() {
+    if (!viewer) return;
+    if (compassRoseEl) {
+      const headingDeg = Cesium.Math.toDegrees(viewer.camera.heading);
+      compassRoseEl.style.transform = `rotate(${-headingDeg}deg)`;
+    }
+    if (zoomHandleEl) {
+      const h = Cesium.Math.clamp(viewer.camera.positionCartographic.height, NAV_ZOOM_MIN_H, NAV_ZOOM_MAX_H);
+      const t = (Math.log(h) - Math.log(NAV_ZOOM_MIN_H)) / (Math.log(NAV_ZOOM_MAX_H) - Math.log(NAV_ZOOM_MIN_H));
+      zoomHandleEl.style.top = `${t * NAV_ZOOM_TRACK_H}px`;
+    }
+  }
+
+  function navHeightFromTrackT(t) {
+    const clamped = Cesium.Math.clamp(t, 0, 1);
+    return Math.exp(Math.log(NAV_ZOOM_MIN_H) + clamped * (Math.log(NAV_ZOOM_MAX_H) - Math.log(NAV_ZOOM_MIN_H)));
+  }
+
+  // heading/height in un colpo solo: mantiene sempre posizione e pitch correnti,
+  // così bussola e slider non si pestano i piedi a vicenda né con l'orbit manuale.
+  function navSetView({ heading, height }) {
+    if (!viewer) return;
+    const carto = viewer.camera.positionCartographic;
+    viewer.camera.setView({
+      destination: Cesium.Cartesian3.fromRadians(carto.longitude, carto.latitude, height ?? carto.height),
+      orientation: { heading: heading ?? viewer.camera.heading, pitch: viewer.camera.pitch, roll: 0 },
+    });
+    viewer.scene.requestRender();
+  }
+
   function initViewer() {
     if (initPromise) return initPromise;
     initPromise = (async () => {
@@ -105,6 +148,10 @@
       viewer.scene.globe.translucency.enabled = true;
       viewer.scene.globe.translucency.frontFaceAlpha = 0;
       viewer.scene.globe.translucency.backFaceAlpha = 0;
+
+      // Tiene bussola/slider sincronizzati con la camera, sia per drag diretto
+      // sui controlli sia per orbit/tilt/wheel-zoom fatti a mano sulla scena.
+      viewer.scene.postRender.addEventListener(updateNavUI);
       Cesium.RequestScheduler.requestsByServer['tile.googleapis.com:443'] = 18;
       const tileset = await Cesium.createGooglePhotorealistic3DTileset();
       // Caricamento più veloce: tile più grossolani (SSE più alto) e priorità dinamica
@@ -432,6 +479,8 @@
       refreshMarkers();
       refreshVie();
       viewer.resize();
+      if (navEl) navEl.hidden = false;
+      updateNavUI();
       if (!window.localStorage.getItem('pf3dHintShown')) {
         statusEl.textContent = 'Trascina col sinistro per ruotare, col destro per inclinare la vista.';
         window.localStorage.setItem('pf3dHintShown', '1');
@@ -452,6 +501,7 @@
     mapEl.style.display = '';
     container.hidden = true;
     statusEl.hidden = true;
+    if (navEl) navEl.hidden = true;
     const tooltipEl = document.getElementById('pf3d-tooltip');
     if (tooltipEl) tooltipEl.hidden = true;
     if (typeof map !== 'undefined') map.resize();
@@ -460,6 +510,71 @@
   toggleBtn.addEventListener('click', () => { active ? disable() : enable(); });
   window.pf3dDisable = () => { if (active) disable(); };
   window.pf3dRefreshMarkers = refreshMarkers;
+
+  // Bussola: trascina per ruotare l'heading, clic sul pallino centrale riazzera nord+pitch.
+  if (compassEl) {
+    let draggingCompass = false;
+    const headingFromEvent = (e) => {
+      const rect = compassEl.getBoundingClientRect();
+      const dx = e.clientX - (rect.left + rect.width / 2);
+      const dy = e.clientY - (rect.top + rect.height / 2);
+      return Math.atan2(dx, -dy); // 0 = su = nord, orario positivo (convenzione heading Cesium)
+    };
+    compassEl.addEventListener('pointerdown', (e) => {
+      if (e.target === compassResetEl) return;
+      draggingCompass = true;
+      compassEl.setPointerCapture(e.pointerId);
+      navSetView({ heading: headingFromEvent(e) });
+    });
+    compassEl.addEventListener('pointermove', (e) => {
+      if (draggingCompass) navSetView({ heading: headingFromEvent(e) });
+    });
+    ['pointerup', 'pointercancel'].forEach((ev) => compassEl.addEventListener(ev, () => { draggingCompass = false; }));
+  }
+  if (compassResetEl) {
+    compassResetEl.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (!viewer) return;
+      const carto = viewer.camera.positionCartographic;
+      viewer.camera.setView({
+        destination: Cesium.Cartesian3.fromRadians(carto.longitude, carto.latitude, carto.height),
+        orientation: { heading: 0, pitch: Cesium.Math.toRadians(-45), roll: 0 },
+      });
+      viewer.scene.requestRender();
+    });
+  }
+
+  // Slider zoom: trascina la manopola o clicca sulla traccia per impostare l'altitudine,
+  // +/- per un passo relativo alla quota corrente.
+  if (zoomTrackEl && zoomHandleEl) {
+    const heightFromClientY = (clientY) => {
+      const rect = zoomTrackEl.getBoundingClientRect();
+      return navHeightFromTrackT((clientY - rect.top) / rect.height);
+    };
+    let draggingZoom = false;
+    zoomHandleEl.addEventListener('pointerdown', (e) => {
+      draggingZoom = true;
+      zoomHandleEl.setPointerCapture(e.pointerId);
+      e.stopPropagation();
+    });
+    zoomHandleEl.addEventListener('pointermove', (e) => {
+      if (draggingZoom) navSetView({ height: heightFromClientY(e.clientY) });
+    });
+    ['pointerup', 'pointercancel'].forEach((ev) => zoomHandleEl.addEventListener(ev, () => { draggingZoom = false; }));
+    zoomTrackEl.addEventListener('pointerdown', (e) => {
+      if (e.target !== zoomHandleEl) navSetView({ height: heightFromClientY(e.clientY) });
+    });
+  }
+  const navZoomBtn = document.getElementById('pf3d-nav-in');
+  const navZoomOutBtn = document.getElementById('pf3d-nav-out');
+  if (navZoomBtn) navZoomBtn.addEventListener('click', () => {
+    if (!viewer) return;
+    navSetView({ height: viewer.camera.positionCartographic.height * 0.5 });
+  });
+  if (navZoomOutBtn) navZoomOutBtn.addEventListener('click', () => {
+    if (!viewer) return;
+    navSetView({ height: viewer.camera.positionCartographic.height * 2 });
+  });
   // Sincronizza lo zoom-su-filtro (legenda/#pf-zoom) anche sulla camera 3D:
   // pfZoomToMatched in filters.js muove solo la camera 2D (map.fitBounds),
   // che in vista 3D è nascosta e non influenza Cesium — senza questo la

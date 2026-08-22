@@ -74,6 +74,121 @@
 }
 .cesium-status[hidden] { display: none; }
 
+/* Navigazione 3D stile Cesium: bussola (drag ruota, clic centro riazzera) + slider zoom */
+.pf3d-nav {
+  position: absolute;
+  top: 35px;
+  right: 20px;
+  z-index: var(--z-toolbar);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  transition: right 0.42s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.pf3d-nav[hidden] { display: none; }
+body:has(#rp-wrap.open) .pf3d-nav {
+  right: 406px;
+}
+
+.pf3d-compass {
+  position: relative;
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.97);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(30, 60, 160, 0.14);
+  box-shadow: 2px 2px 10px rgba(30, 60, 160, 0.13);
+  color: #1e3ca0;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+.pf3d-compass:active { cursor: grabbing; }
+.pf3d-compass-rose {
+  display: block;
+  pointer-events: none;
+  transform-origin: 27px 27px;
+}
+.pf3d-compass-reset {
+  position: absolute;
+  top: 50%; left: 50%;
+  width: 12px; height: 12px;
+  margin: -6px 0 0 -6px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.55;
+  border: 2px solid rgba(255, 255, 255, 0.9);
+  cursor: pointer;
+  padding: 0;
+}
+.pf3d-compass-reset:hover { opacity: 0.9; }
+
+.pf3d-zoom {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.97);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(30, 60, 160, 0.14);
+  border-radius: 10px;
+  box-shadow: 2px 2px 10px rgba(30, 60, 160, 0.13);
+  padding: 4px;
+}
+.pf3d-nav-btn {
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  border-radius: 6px;
+  color: #1e3ca0;
+  cursor: pointer;
+  padding: 0;
+  flex: none;
+}
+.pf3d-nav-btn:hover { background: #1e3ca0; color: var(--c-white); }
+.pf3d-nav-btn:active { background: #16307f; }
+.pf3d-zoom-track {
+  position: relative;
+  width: 4px;
+  height: 74px;
+  border-radius: 2px;
+  background: rgba(30, 60, 160, 0.16);
+  touch-action: none;
+  cursor: pointer;
+}
+.pf3d-zoom-handle {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: 14px; height: 14px;
+  margin-left: -7px;
+  border-radius: 50%;
+  background: #1e3ca0;
+  border: 2px solid var(--c-white);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.35);
+  cursor: grab;
+}
+.pf3d-zoom-handle:active { cursor: grabbing; }
+
+[data-theme="dark"] .pf3d-compass,
+[data-theme="dark"] .pf3d-zoom {
+  background: rgba(15, 23, 46, 0.97);
+  border-color: rgba(70, 110, 220, 0.22);
+  color: #a0b0d8;
+}
+[data-theme="dark"] .pf3d-nav-btn { color: #a0b0d8; }
+[data-theme="dark"] .pf3d-nav-btn:hover { background: #2458c8; color: var(--c-white); }
+[data-theme="dark"] .pf3d-zoom-track { background: rgba(160, 176, 216, 0.2); }
+[data-theme="dark"] .pf3d-zoom-handle { background: #2458c8; }
+
 /* Modale galleria foto */
 .photo-modal {
   position: fixed;

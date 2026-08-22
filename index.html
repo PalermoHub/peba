@@ -50,6 +50,29 @@
 <div id="cesium-status" class="cesium-status" hidden></div>
 <div id="pf3d-tooltip" class="pf3d-tooltip" hidden></div>
 
+<div id="pf3d-nav" class="pf3d-nav" hidden>
+  <div id="pf3d-compass" class="pf3d-compass" title="Trascina per ruotare — clic al centro per riazzerare" aria-label="Bussola: trascina per ruotare la vista">
+    <svg id="pf3d-compass-rose" class="pf3d-compass-rose" width="54" height="54" viewBox="0 0 54 54">
+      <circle cx="27" cy="27" r="25" fill="none" stroke="currentColor" stroke-width="1.4" opacity="0.35"/>
+      <path d="M27 4 L32 27 L27 22 L22 27 Z" fill="currentColor"/>
+      <path d="M27 50 L32 27 L27 32 L22 27 Z" fill="currentColor" opacity="0.4"/>
+      <text x="27" y="12" text-anchor="middle" font-size="8" font-weight="700" fill="currentColor">N</text>
+    </svg>
+    <button id="pf3d-compass-reset" class="pf3d-compass-reset" title="Riazzera vista" aria-label="Riazzera vista"></button>
+  </div>
+  <div id="pf3d-zoom" class="pf3d-zoom">
+    <button id="pf3d-nav-in" class="pf3d-nav-btn" title="Zoom avanti" aria-label="Zoom avanti">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    </button>
+    <div id="pf3d-zoom-track" class="pf3d-zoom-track">
+      <div id="pf3d-zoom-handle" class="pf3d-zoom-handle"></div>
+    </div>
+    <button id="pf3d-nav-out" class="pf3d-nav-btn" title="Zoom indietro" aria-label="Zoom indietro">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    </button>
+  </div>
+</div>
+
 <div id="map-toolbar-wrap">
 <div id="map-toolbar">
 
@@ -508,6 +531,17 @@
           identificativo, mentre un clic apre la scheda completa.
         </p>
         <img src="img/guida/mappa.jpg" alt="Vista generale della mappa con marcatori" class="guida-shot" onclick="openPhotoModal(['img/guida/mappa.jpg'], 0)" />
+      </div>
+      <div class="panel-section">
+        <h3>Navigare in 3D</h3>
+        <p class="panel-note">
+          Il pulsante "3D" nella toolbar attiva la vista fotorealistica a schermo intero.
+          Trascina per spostarti, trascina con il tasto destro (o Ctrl + trascinamento) per
+          ruotare e inclinare la vista, usa la rotellina o il pizzico a due dita per zoomare.
+          A destra trovi la bussola — trascinala per ruotare, clicca al centro per riazzerare —
+          e lo slider per lo zoom.
+        </p>
+        <img src="img/guida/3d.jpg" alt="Vista 3D fotorealistica con bussola e controllo zoom" class="guida-shot" onclick="openPhotoModal(['img/guida/3d.jpg'], 0)" />
       </div>
       <div class="panel-section">
         <h3>Scheda immobile</h3>
