@@ -356,6 +356,10 @@
   // (la quota reale non cambia mai — una volta cotta col comando pf3dBakeQuote()
   // in console e incollata in dati/peba_edifici.geojson, si campiona zero volte).
   const quotaTerrenoByCodice = new Map();
+  // Cache runtime: quota del TETTO reale (mesh fotorealistica), per correggere
+  // il campo "altezza" quando sottostima l'edificio vero (es. dato PEBA riferito
+  // solo alla porzione occupata, non all'intero condominio/torre che la ospita).
+  const quotaTettoByCodice = new Map();
 
   // Campiona la quota-marciapiede (mediana di pochi punti spinti fuori dalla
   // sagoma, vedi spingiFuori) per gli edifici passati e la mette in cache.
@@ -391,6 +395,40 @@
     return true;
   }
 
+  // Campiona la quota del TETTO (mediante sampleHeightMostDetailed dritto sui
+  // vertici/centroide, senza spingerli fuori come in campionaQuote: qui il colpire
+  // il tetto è voluto, non un bug) e tiene il massimo tra i campioni — un tetto
+  // spiovente o a più livelli deve restare comunque tutto dentro il poligono.
+  async function campionaTetti(entries, requestId) {
+    if (!viewer.scene.sampleHeightSupported || !entries.length) return true;
+    const MAX_VERTICI = 4;
+    const samples = [];
+    const ranges = [];
+    entries.forEach(({ feature }) => {
+      const outer = feature.geometry.coordinates[0];
+      const centroid = centroideAnello(outer);
+      const passo = Math.max(1, Math.floor(outer.length / MAX_VERTICI));
+      const start = samples.length;
+      samples.push(Cesium.Cartographic.fromDegrees(centroid[0], centroid[1]));
+      for (let vi = 0; vi < outer.length; vi += passo) {
+        samples.push(Cesium.Cartographic.fromDegrees(outer[vi][0], outer[vi][1]));
+      }
+      ranges.push([start, samples.length]);
+    });
+
+    try {
+      await viewer.scene.sampleHeightMostDetailed(samples);
+    } catch { /* tileset non pronto: niente correzione, si resta sull'altezza nominale */ }
+    if (requestId != null && requestId !== edificiRequestId) return false;
+
+    entries.forEach(({ codice }, i) => {
+      const [start, end] = ranges[i];
+      const valid = samples.slice(start, end).map((c) => c.height).filter((h) => Number.isFinite(h));
+      if (valid.length) quotaTettoByCodice.set(codice, Math.max(...valid));
+    });
+    return true;
+  }
+
   // Comando manuale, una tantum: da console (`pf3dBakeQuote()`) a vista 3D
   // attiva, campiona la quota di TUTTI gli edifici PEBA e scarica un JSON
   // {Codice: quota} da incollare come campo "quota" in peba_edifici.geojson —
@@ -398,10 +436,15 @@
   window.pf3dBakeQuote = async function pf3dBakeQuote() {
     if (!viewer) { console.warn('Attiva prima la vista 3D.'); return; }
     const entries = Array.from(edificiByCodice.entries()).map(([codice, feature]) => ({ codice, feature }));
-    await campionaQuote(entries, null);
+    await Promise.all([
+      campionaQuote(entries, null),
+      campionaTetti(entries, null),
+    ]);
     const out = {};
-    entries.forEach(({ codice }) => { out[codice] = quotaTerrenoByCodice.get(codice); });
-    console.log('Quote calcolate:', out);
+    entries.forEach(({ codice }) => {
+      out[codice] = { quota: quotaTerrenoByCodice.get(codice), tetto: quotaTettoByCodice.get(codice) };
+    });
+    console.log('Quote/tetti calcolati:', out);
     const blob = new Blob([JSON.stringify(out, null, 2)], { type: 'application/json' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
@@ -438,14 +481,18 @@
 
     const daCampionare = targets.filter(({ p, feature }) => !Number.isFinite(feature.properties.quota)
       && !quotaTerrenoByCodice.has(p.Codice));
+    const daCampionareTetto = targets.filter(({ p, feature }) => !Number.isFinite(feature.properties.tetto)
+      && !quotaTettoByCodice.has(p.Codice));
 
-    if (daCampionare.length) {
-      const ok = await campionaQuote(
-        daCampionare.map(({ p, feature }) => ({ codice: p.Codice, feature })),
-        myRequest,
-      );
-      if (!ok) return; // filtro cambiato nel frattempo
-    }
+    const [okQuote, okTetti] = await Promise.all([
+      daCampionare.length
+        ? campionaQuote(daCampionare.map(({ p, feature }) => ({ codice: p.Codice, feature })), myRequest)
+        : true,
+      daCampionareTetto.length
+        ? campionaTetti(daCampionareTetto.map(({ p, feature }) => ({ codice: p.Codice, feature })), myRequest)
+        : true,
+    ]);
+    if (!okQuote || !okTetti) return; // filtro cambiato nel frattempo
 
     const groundByTarget = targets.map(({ p, feature }) => (Number.isFinite(feature.properties.quota)
       ? feature.properties.quota
@@ -462,12 +509,27 @@
         Cesium.Cartesian3.fromDegreesArray(ring.flatMap(([lng, lat]) => [lng, lat])),
       ));
       const altezza = feature.properties.altezza > 1 ? feature.properties.altezza : 8;
-      const base = groundByTarget[i];
+      // La quota è un'unica mediana per tutto il footprint: su terreno in pendenza
+      // (o con lo scarto tra mesh fotorealistica Google e campione Cesium) non
+      // combacia esattamente col reale a ogni angolo. Margini generosi sotto/sopra
+      // fanno sì che il poligono inglobi comunque l'edificio reale del tileset
+      // invece di sfiorarlo per un soffio — è un involucro indicativo, non un calco.
+      const MARGINE_BASSO = 2;
+      const MARGINE_ALTO = 4;
+      const base = groundByTarget[i] - MARGINE_BASSO;
+      // Il campo "altezza" a volte sottostima di molto (es. sede al piano terra
+      // di una torre residenziale più alta): il tetto campionato sul tileset,
+      // quando disponibile, vince se è più alto della stima nominale.
+      const cimaNominale = groundByTarget[i] + altezza;
+      const cimaTetto = Number.isFinite(feature.properties.tetto)
+        ? feature.properties.tetto
+        : quotaTettoByCodice.get(p.Codice);
+      const cima = Number.isFinite(cimaTetto) ? Math.max(cimaNominale, cimaTetto) : cimaNominale;
       const entity = viewer.entities.add({
         polygon: {
           hierarchy: new Cesium.PolygonHierarchy(positions, holePolys),
           height: base,
-          extrudedHeight: base + altezza,
+          extrudedHeight: cima + MARGINE_ALTO,
           material: Cesium.Color.fromCssColorString(colore).withAlpha(0.55),
           outline: true,
           outlineColor: Cesium.Color.fromCssColorString(colore),
