@@ -135,10 +135,32 @@
         }
       }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
 
+      const tooltipEl = document.getElementById('pf3d-tooltip');
+      const canvasRect = () => canvas.getBoundingClientRect();
       handler.setInputAction((movement) => {
         const picked = viewer.scene.drillPick(movement.endPosition, 5);
-        const overMarker = picked.some((obj) => obj.id && obj.id.properties && obj.id.properties.codice);
-        canvas.style.cursor = overMarker ? 'pointer' : '';
+        const hit = picked.find((obj) => obj.id && obj.id.properties && obj.id.properties.codice);
+        canvas.style.cursor = hit ? 'pointer' : '';
+        if (!hit || !tooltipEl) { if (tooltipEl) tooltipEl.hidden = true; return; }
+        const codice = hit.id.properties.codice.getValue();
+        const p = propsByCodice.get(codice);
+        if (!p) { tooltipEl.hidden = true; return; }
+        const nome = esc(p['Nome Immobile']) || esc(p.Gruppo) || '(senza nome)';
+        const label = codice ? `${esc(codice)} – ${nome}` : nome;
+        const colGruppo = COLORI_GRUPPO[p.Gruppo] || '#999999';
+        const livello = p['Livello accessibilita'];
+        const colLivello = badgeColori(livello);
+        const badgeHtml = livello
+          ? `<span class="mp-badge" style="background:${colLivello.bg};color:${colLivello.text};border-color:${colLivello.border};">${esc(livello)}</span>`
+          : '';
+        tooltipEl.innerHTML = `
+          <div class="mp-title"><span class="mp-dot" style="background:${colGruppo};"></span>${label}</div>
+          ${badgeHtml}
+        `;
+        const rect = canvasRect();
+        tooltipEl.style.left = `${rect.left + movement.endPosition.x}px`;
+        tooltipEl.style.top = `${rect.top + movement.endPosition.y}px`;
+        tooltipEl.hidden = false;
       }, Cesium.ScreenSpaceEventType.MOUSE_MOVE);
     })();
     return initPromise;
@@ -261,6 +283,8 @@
     mapEl.style.display = '';
     container.hidden = true;
     statusEl.hidden = true;
+    const tooltipEl = document.getElementById('pf3d-tooltip');
+    if (tooltipEl) tooltipEl.hidden = true;
     if (typeof map !== 'undefined') map.resize();
   }
 
