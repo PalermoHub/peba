@@ -189,6 +189,29 @@ const COLORI_GRUPPO = {
   'Museo': '#e336b7',
   'Sito UNESCO (edificio)': '#916a39',
 };
+
+// ── Palette "Gruppo" alternativa ad alto contrasto per daltonici ─────────
+// Base Okabe-Ito (le 7 tinte non-nere, lo standard più citato per la sicurezza
+// daltonica) + 2 estensioni dalla palette "muted" di Paul Tol per coprire i 10
+// gruppi. La coppia più a rischio resta comunque il verde/verde acqua: separati
+// soprattutto per luminosità, non per tinta pura.
+const COLORI_GRUPPO_CBF = {
+  'Percorso UNESCO': '#d55e00',
+  'Percorso storico': '#332288',
+  'Via cittadina': '#0072b2',
+  'Piazza': '#e69f00',
+  'Area verde': '#117733',
+  'Asilo': '#cc79a7',
+  'Scuola': '#56b4e9',
+  'Sede amministrativa/istituzionale': '#f0e442',
+  'Museo': '#882255',
+  'Sito UNESCO (edificio)': '#009e73',
+};
+let gruppoPaletteCBF = localStorage.getItem('peba-gruppo-cbf') === '1';
+function coloriGruppoAttivi() {
+  return gruppoPaletteCBF ? COLORI_GRUPPO_CBF : COLORI_GRUPPO;
+}
+
 // Icona (paths SVG, stroke, viewBox 24) per Gruppo — usata nell'header della scheda
 const DEFAULT_ICON_PATHS = '<path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>';
 const ICONE_GRUPPO = {
@@ -221,15 +244,22 @@ const RAMP_LIVELLO = ['match', ['get', 'Livello accessibilita']];
 Object.entries(COLORI_ACCESSIBILITA).forEach(([k, v]) => { RAMP_LIVELLO.push(k, v); });
 RAMP_LIVELLO.push(COLORI_ACCESSIBILITA['Non valutabile']);
 
-// Stessa palette della legenda "Gruppo", applicata ai punti immobile
-const RAMP_GRUPPO = ['match', ['get', 'Gruppo']];
-Object.entries(COLORI_GRUPPO).forEach(([k, v]) => { RAMP_GRUPPO.push(k, v); });
-RAMP_GRUPPO.push('#999999');
-
+// Stessa palette della legenda "Gruppo" (ufficiale o daltonica), applicata ai punti immobile
+function buildRampGruppo() {
+  const ramp = ['match', ['get', 'Gruppo']];
+  Object.entries(coloriGruppoAttivi()).forEach(([k, v]) => { ramp.push(k, v); });
+  ramp.push('#999999');
+  return ramp;
+}
 // Stessa palette "Gruppo", applicata alle vie/percorsi PEBA (proprietà peba_tipo)
-const RAMP_GRUPPO_VIA = ['match', ['get', 'peba_tipo']];
-Object.entries(COLORI_GRUPPO).forEach(([k, v]) => { RAMP_GRUPPO_VIA.push(k, v); });
-RAMP_GRUPPO_VIA.push('#999999');
+function buildRampGruppoVia() {
+  const ramp = ['match', ['get', 'peba_tipo']];
+  Object.entries(coloriGruppoAttivi()).forEach(([k, v]) => { ramp.push(k, v); });
+  ramp.push('#999999');
+  return ramp;
+}
+let RAMP_GRUPPO = buildRampGruppo();
+let RAMP_GRUPPO_VIA = buildRampGruppoVia();
 
 // Stessa palette "Livello accessibilità", applicata alle vie/percorsi PEBA
 // (proprietà livello_via, ricavata per match nome via ↔ Nome/Localizzazione immobile)
@@ -251,6 +281,23 @@ function setMapTheme(theme) {
   if (typeof window.pf3dRefreshMarkers === 'function') window.pf3dRefreshMarkers();
 }
 window.setMapTheme = setMapTheme;
+
+// Switch palette "Gruppo" ufficiale ↔ daltonica (persistito, si applica a mappa,
+// legenda, chip filtro e vista 3D — indipendentemente dal tema attivo)
+function setGruppoPaletteCBF(on) {
+  gruppoPaletteCBF = on;
+  localStorage.setItem('peba-gruppo-cbf', on ? '1' : '0');
+  RAMP_GRUPPO = buildRampGruppo();
+  RAMP_GRUPPO_VIA = buildRampGruppoVia();
+  if (currentMapTheme === 'gruppo') {
+    if (map.getLayer('peba-punti-circle')) map.setPaintProperty('peba-punti-circle', 'circle-color', RAMP_GRUPPO);
+    if (map.getLayer('rete-archi-peba-line')) map.setPaintProperty('rete-archi-peba-line', 'line-color', RAMP_GRUPPO_VIA);
+  }
+  if (typeof window.pf3dRefreshVie === 'function') window.pf3dRefreshVie();
+  if (typeof window.pf3dRefreshMarkers === 'function') window.pf3dRefreshMarkers();
+}
+window.setGruppoPaletteCBF = setGruppoPaletteCBF;
+window.isGruppoPaletteCBF = () => gruppoPaletteCBF;
 
 // Nome via/piazza (maiuscolo) → Livello accessibilità dell'immobile-percorso PEBA
 // corrispondente. Un percorso (es. "VIA MAGIONE - VIA DELLA PACE - ...") copre più
@@ -404,7 +451,7 @@ function badgeColori(livello) {
 }
 
 function badgeColoriGruppo(gruppo) {
-  const col = COLORI_GRUPPO[gruppo] || '#999999';
+  const col = coloriGruppoAttivi()[gruppo] || '#999999';
   return { bg: `${col}22`, text: badgeTextColor(col), border: `${col}88` };
 }
 
@@ -577,7 +624,7 @@ map.on('mousemove', 'peba-punti-circle', (e) => {
   const nome = esc(f.properties['Nome Immobile']) || esc(f.properties.Gruppo) || '(senza nome)';
   const codice = esc(f.properties.Codice);
   const label = codice ? `${codice} – ${nome}` : nome;
-  const colGruppo = COLORI_GRUPPO[f.properties.Gruppo] || '#999999';
+  const colGruppo = coloriGruppoAttivi()[f.properties.Gruppo] || '#999999';
   const livello = f.properties['Livello accessibilita'];
   const colLivello = badgeColori(livello);
   const badgeHtml = livello

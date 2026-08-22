@@ -44,7 +44,8 @@
 
   function coloreVia(props) {
     if (typeof currentMapTheme !== 'undefined' && currentMapTheme === 'gruppo') {
-      return (typeof COLORI_GRUPPO !== 'undefined' && COLORI_GRUPPO[props.peba_tipo]) || '#999999';
+      const palette = typeof coloriGruppoAttivi === 'function' ? coloriGruppoAttivi() : COLORI_GRUPPO;
+      return (palette && palette[props.peba_tipo]) || '#999999';
     }
     return (typeof COLORI_ACCESSIBILITA !== 'undefined'
       && (COLORI_ACCESSIBILITA[props.livello_via] || COLORI_ACCESSIBILITA['Non valutabile'])) || '#999999';
@@ -89,7 +90,8 @@
 
   function coloreMarker(p) {
     if (typeof currentMapTheme !== 'undefined' && currentMapTheme === 'gruppo') {
-      return (typeof COLORI_GRUPPO !== 'undefined' && COLORI_GRUPPO[p.Gruppo]) || '#999999';
+      const palette = typeof coloriGruppoAttivi === 'function' ? coloriGruppoAttivi() : COLORI_GRUPPO;
+      return (palette && palette[p.Gruppo]) || '#999999';
     }
     return (typeof COLORI_ACCESSIBILITA !== 'undefined'
       && (COLORI_ACCESSIBILITA[p['Livello accessibilita']] || COLORI_ACCESSIBILITA['Non valutabile'])) || '#999999';
@@ -213,7 +215,8 @@
         if (!p) { tooltipEl.hidden = true; return; }
         const nome = esc(p['Nome Immobile']) || esc(p.Gruppo) || '(senza nome)';
         const label = codice ? `${esc(codice)} – ${nome}` : nome;
-        const colGruppo = COLORI_GRUPPO[p.Gruppo] || '#999999';
+        const palette = typeof coloriGruppoAttivi === 'function' ? coloriGruppoAttivi() : COLORI_GRUPPO;
+        const colGruppo = palette[p.Gruppo] || '#999999';
         const livello = p['Livello accessibilita'];
         const colLivello = badgeColori(livello);
         const badgeHtml = livello

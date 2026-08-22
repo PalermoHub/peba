@@ -116,11 +116,15 @@ let legendDim = 'livello';
 function pfBuildLegend(dim) {
   legendDim = dim;
   const cfg = LEGEND_DIMS[dim];
+  const colors = dim === 'gruppo' ? coloriGruppoAttivi() : cfg.colors;
   const rowsEl = document.getElementById('legend-rows');
   const titleEl = document.getElementById('legend-gruppo-toggle');
-  titleEl.innerHTML = `<span class="legend-toggle-arrow">▾</span>${esc(cfg.title)} <span class="map-legend-hint">(clic per filtrare)</span>`;
+  const cbfBtn = dim === 'gruppo'
+    ? `<button type="button" id="legend-cbf-toggle" class="legend-cbf-btn${isGruppoPaletteCBF() ? ' active' : ''}" title="Palette alternativa per daltonici">Daltonici</button>`
+    : '';
+  titleEl.innerHTML = `<span class="legend-title-txt"><span class="legend-toggle-arrow">▾</span>${esc(cfg.title)} <span class="map-legend-hint">(clic per filtrare)</span></span>${cbfBtn}`;
   rowsEl.innerHTML = cfg.order.map((v) => `
-    <div class="legend-row" data-dim="${dim}" data-value="${esc(v)}"><span class="legend-dot" style="background:${cfg.colors[v] || '#999999'}"></span><span class="legend-label">${esc((cfg.labels && cfg.labels[v]) || v)}</span><span class="legend-count"></span></div>
+    <div class="legend-row" data-dim="${dim}" data-value="${esc(v)}"><span class="legend-dot" style="background:${colors[v] || '#999999'}"></span><span class="legend-label">${esc((cfg.labels && cfg.labels[v]) || v)}</span><span class="legend-count"></span></div>
   `).join('');
   rowsEl.querySelectorAll('.legend-row[data-dim]').forEach((row) => {
     row.addEventListener('click', () => {
@@ -132,9 +136,26 @@ function pfBuildLegend(dim) {
       pfZoomToMatched();
     });
   });
+  const cbfEl = document.getElementById('legend-cbf-toggle');
+  if (cbfEl) {
+    cbfEl.addEventListener('click', (e) => {
+      e.stopPropagation();
+      pfToggleGruppoPalette();
+    });
+  }
   pfUpdateLegend();
 }
 window.pfBuildLegend = pfBuildLegend;
+
+// ── Switch palette "Gruppo" ufficiale ↔ daltonica: ricostruisce legenda e
+// chipset filtro con i nuovi colori (la mappa/3D si aggiornano da soli via
+// setGruppoPaletteCBF, definita in map.js) ────────────────────────────────
+function pfToggleGruppoPalette() {
+  setGruppoPaletteCBF(!isGruppoPaletteCBF());
+  pfBuildChipset(document.getElementById('pf-gruppo-set'), 'gruppo', 'Gruppo', GRUPPO_ORDER, coloriGruppoAttivi());
+  if (legendDim === 'gruppo') pfBuildLegend('gruppo');
+  pfRenderAll();
+}
 
 function pfUpdateLegend() {
   const cfg = LEGEND_DIMS[legendDim];
@@ -273,7 +294,7 @@ fetch(DATA.peba).then((r) => r.json()).then((geo) => {
     lat: f.geometry.coordinates[1],
   }));
 
-  pfBuildChipset(document.getElementById('pf-gruppo-set'),  'gruppo',  'Gruppo', GRUPPO_ORDER, COLORI_GRUPPO);
+  pfBuildChipset(document.getElementById('pf-gruppo-set'),  'gruppo',  'Gruppo', GRUPPO_ORDER, coloriGruppoAttivi());
   pfBuildChipset(document.getElementById('pf-livello-set'), 'livello', 'Livello accessibilita', LIVELLO_ORDER, COLORI_ACCESSIBILITA);
   pfBuildLegend('livello');
 

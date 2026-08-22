@@ -475,6 +475,10 @@ body {
 .lac-o { left: 3px; top: 50%; transform: translateY(-50%); }
 
 .map-legend-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
   font-size: 9px;
   font-weight: 700;
   text-transform: uppercase;
@@ -484,6 +488,32 @@ body {
   padding-bottom: 5px;
   border-bottom: 1px solid rgba(30, 60, 160, 0.1);
 }
+.legend-title-txt { min-width: 0; }
+
+/* Switch palette "Gruppo" ufficiale / daltonica, nel titolo della legenda */
+.legend-cbf-btn {
+  flex-shrink: 0;
+  font-size: 8px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 3px 6px;
+  border: 1px solid rgba(30, 60, 160, 0.18);
+  border-radius: 5px;
+  background: transparent;
+  color: #8898c8;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.legend-cbf-btn.active {
+  background: rgba(36, 88, 200, 0.12);
+  color: var(--c-brand-blue);
+  border-color: rgba(36, 88, 200, 0.35);
+}
+.legend-cbf-btn:hover:not(.active) { background: rgba(30, 60, 160, 0.06); }
+[data-theme="dark"] .legend-cbf-btn { color: #6b7aab; border-color: rgba(70, 110, 220, 0.2); }
+[data-theme="dark"] .legend-cbf-btn.active { background: rgba(70, 110, 220, 0.18); color: #7898e0; border-color: rgba(70, 110, 220, 0.45); }
+[data-theme="dark"] .legend-cbf-btn:hover:not(.active) { background: rgba(70, 110, 220, 0.08); }
 
 
 /* Sezioni testuali pannello destro (intro PEBA) */
