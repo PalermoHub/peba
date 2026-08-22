@@ -7,19 +7,43 @@ const DATA = {
   peba: 'dati/peba.geojson',
   reteArchi: 'dati/geojson/rete_archi.geojson',
   codiceOggettoPdf: 'dati/codice_oggetto_pdf.json',
-  pdfSizes: 'dati/pdf_sizes.json',
 };
 
-// Mappa Codice -> file_pdf (dati/codice_oggetto_pdf.json) e dimensioni file (dati/pdf_sizes.json)
+// Dimensione in byte di ogni file dati/pdf/*.pdf (valore statico: evita una seconda fetch)
+const PDF_SIZES = new Map(Object.entries({
+  '1792335239_2026_08_18.pdf': 143717,
+  '1792335239_2026_08_18_1.pdf': 142257,
+  '1792335239_2026_08_18_2.pdf': 1968255,
+  '1792335239_2026_08_18_3.pdf': 2882822,
+  '1792335239_2026_08_18_4.pdf': 4563383,
+  '1792335239_2026_08_18_5.pdf': 2268954,
+  '1792335239_2026_08_18_6.pdf': 2779455,
+  '1792335239_2026_08_18_7.pdf': 3108135,
+  '1792335239_2026_08_18_8.pdf': 4124894,
+  '1792335239_2026_08_18_9.pdf': 4520983,
+  '1792335239_2026_08_18_10.pdf': 5119731,
+  '1792335239_2026_08_18_11.pdf': 7711273,
+  '1792335239_2026_08_18_12.pdf': 13218396,
+  '1792335239_2026_08_18_13.pdf': 14791499,
+  '1792335239_2026_08_18_14.pdf': 16558591,
+  '1792335239_2026_08_18_15.pdf': 18513683,
+  '1792335239_2026_08_18_16.pdf': 20083556,
+  '1792335239_2026_08_18_17.pdf': 24134743,
+  '1792335239_2026_08_18_18.pdf': 24299191,
+  '1792335239_2026_08_18_19.pdf': 27713123,
+  '1792335239_2026_08_18_20.pdf': 28156339,
+  '1792335239_2026_08_18_21.pdf': 29789794,
+  '1792335239_2026_08_18_22.pdf': 35324737,
+  '1792335239_2026_08_18_23.pdf': 39042861,
+  '1792335239_2026_08_18_24.pdf': 45073666,
+  '1792335239_2026_08_18_25.pdf': 46793753,
+}));
+
+// Mappa Codice -> file_pdf (dati/codice_oggetto_pdf.json)
 const CODICE_PDF = new Map();
-const PDF_SIZES = new Map();
-Promise.all([
-  fetch(DATA.codiceOggettoPdf).then((r) => r.json()).catch(() => []),
-  fetch(DATA.pdfSizes).then((r) => r.json()).catch(() => ({})),
-]).then(([elenco, sizes]) => {
+fetch(DATA.codiceOggettoPdf).then((r) => r.json()).then((elenco) => {
   elenco.forEach((v) => { if (v.codice && v.file_pdf) CODICE_PDF.set(v.codice, v.file_pdf); });
-  Object.entries(sizes).forEach(([f, b]) => PDF_SIZES.set(f, b));
-});
+}).catch(() => {});
 
 function fmtDimensioneFile(bytes) {
   if (!bytes) return '';
@@ -586,7 +610,7 @@ function showPebaDetail(p, lngLat) {
 
   const accessibilita = rpSec('Accessibilità');
   accessibilita.appendChild(rpBadgeRow('Livello', esc(p['Livello accessibilita']) || 'non valutabile', badgeColori(p['Livello accessibilita'])));
-  accessibilita.appendChild(rpRow('Punteggio', p.Punteggio != null ? `${fmtNum(p.Punteggio, 0)} / 100` : 'n/d'));
+  accessibilita.appendChild(rpRow('Punteggio di inaccessibilità', p.Punteggio != null ? `${fmtNum(p.Punteggio, 0)} / 100` : 'n/d'));
   if (p.Punteggio != null) {
     const col = COLORI_ACCESSIBILITA[p['Livello accessibilita']] || COLORI_ACCESSIBILITA['Non valutabile'];
     accessibilita.appendChild(rpScoreBar(p.Punteggio, badgeTextColor(col)));
