@@ -28,10 +28,17 @@
   let markerEntities = [];
   let viaEntities = [];
   let poligonoEntities = [];
+  let areaEntities = [];
   const edificiByCodice = new Map();
+  const areeVerdiByCodice = new Map();
 
   fetch(DATA.pebaEdifici).then((r) => r.json()).then((geo) => {
     geo.features.forEach((f) => edificiByCodice.set(f.properties.Codice, f));
+    if (active) refreshMarkers();
+  });
+
+  fetch(DATA.pebaAreeVerdi).then((r) => r.json()).then((geo) => {
+    geo.features.forEach((f) => areeVerdiByCodice.set(f.properties.Codice, f));
     if (active) refreshMarkers();
   });
 
@@ -276,6 +283,44 @@
     });
 
     refreshEdifici(fonte);
+    refreshAreeVerdi(fonte);
+  }
+
+  // Poligoni piatti (aree verdi/cimiteri, dati/peba_aree_verdi.geojson, join
+  // offline punto PEBA -> OSM): niente estrusione né campionamento quota come
+  // per gli edifici, classificationType fa aderire la forma al terreno/mesh
+  // fotorealistica qualunque sia la superficie sottostante.
+  function refreshAreeVerdi(fonte) {
+    if (!viewer) return;
+    areaEntities.forEach((e) => viewer.entities.remove(e));
+    areaEntities = [];
+
+    fonte.forEach(({ p }) => {
+      const feature = p.Codice && areeVerdiByCodice.get(p.Codice);
+      if (!feature) return;
+      const colore = coloreMarker(p);
+      const poligoni = feature.geometry.type === 'MultiPolygon'
+        ? feature.geometry.coordinates
+        : [feature.geometry.coordinates];
+      poligoni.forEach((rings) => {
+        const [outer, ...holes] = rings;
+        const positions = Cesium.Cartesian3.fromDegreesArray(outer.flatMap(([lng, lat]) => [lng, lat]));
+        const holePolys = holes.map((ring) => new Cesium.PolygonHierarchy(
+          Cesium.Cartesian3.fromDegreesArray(ring.flatMap(([lng, lat]) => [lng, lat])),
+        ));
+        const entity = viewer.entities.add({
+          polygon: {
+            hierarchy: new Cesium.PolygonHierarchy(positions, holePolys),
+            material: Cesium.Color.fromCssColorString(colore).withAlpha(0.45),
+            outline: true,
+            outlineColor: Cesium.Color.fromCssColorString(colore),
+            classificationType: Cesium.ClassificationType.BOTH,
+          },
+          properties: { codice: p.Codice },
+        });
+        areaEntities.push(entity);
+      });
+    });
   }
 
   function centroideAnello(ring) {
