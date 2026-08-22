@@ -6,7 +6,49 @@ const BOUNDS = [13.10, 37.94, 13.60, 38.33];
 const DATA = {
   peba: 'dati/peba.geojson',
   reteArchi: 'dati/geojson/rete_archi.geojson',
+  codiceOggettoPdf: 'dati/codice_oggetto_pdf.json',
+  pdfSizes: 'dati/pdf_sizes.json',
 };
+
+// Mappa Codice -> file_pdf (dati/codice_oggetto_pdf.json) e dimensioni file (dati/pdf_sizes.json)
+const CODICE_PDF = new Map();
+const PDF_SIZES = new Map();
+Promise.all([
+  fetch(DATA.codiceOggettoPdf).then((r) => r.json()).catch(() => []),
+  fetch(DATA.pdfSizes).then((r) => r.json()).catch(() => ({})),
+]).then(([elenco, sizes]) => {
+  elenco.forEach((v) => { if (v.codice && v.file_pdf) CODICE_PDF.set(v.codice, v.file_pdf); });
+  Object.entries(sizes).forEach(([f, b]) => PDF_SIZES.set(f, b));
+});
+
+function fmtDimensioneFile(bytes) {
+  if (!bytes) return '';
+  const mb = bytes / (1024 * 1024);
+  return mb >= 1 ? `${fmtNum(mb, 1)} MB` : `${fmtNum(bytes / 1024, 0)} KB`;
+}
+
+// Sezione con link al PDF della scheda originale (dati/pdf/<file_pdf>)
+function rpLinkPdf(codice) {
+  const file = CODICE_PDF.get(codice);
+  if (!file) return null;
+  const s = rpSec('Scheda PDF');
+  const href = `dati/pdf/${encodeURIComponent(file)}`;
+  const a = document.createElement('a');
+  a.href = href;
+  a.target = '_blank';
+  a.rel = 'noopener noreferrer';
+  a.className = 'rp-pdf-link';
+  a.textContent = 'Apri scheda PDF originale';
+  s.appendChild(a);
+  const dim = fmtDimensioneFile(PDF_SIZES.get(file));
+  if (dim) {
+    const nota = document.createElement('p');
+    nota.className = 'rp-pdf-note';
+    nota.textContent = `File pesante: ${dim} — il download potrebbe richiedere tempo.`;
+    s.appendChild(nota);
+  }
+  return s;
+}
 
 function makeAttribNode(text, href) {
   const frag = document.createDocumentFragment();
@@ -564,6 +606,9 @@ function showPebaDetail(p, lngLat) {
     crit.appendChild(rpCriticitaList(p['Criticità Rilevate']));
     sections.push(crit);
   }
+
+  const linkPdf = rpLinkPdf(p.Codice);
+  if (linkPdf) sections.push(linkPdf);
 
   const foto = rpGalleriaFoto(p.Codice, p['N. foto rilievo']);
   if (foto) sections.push(foto);
