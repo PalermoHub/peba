@@ -245,6 +245,8 @@ function setMapTheme(theme) {
   if (map.getLayer('rete-archi-peba-line')) {
     map.setPaintProperty('rete-archi-peba-line', 'line-color', theme === 'gruppo' ? RAMP_GRUPPO_VIA : RAMP_LIVELLO_VIA);
   }
+  if (typeof window.pf3dRefreshVie === 'function') window.pf3dRefreshVie();
+  if (typeof window.pf3dRefreshMarkers === 'function') window.pf3dRefreshMarkers();
 }
 window.setMapTheme = setMapTheme;
 
@@ -296,6 +298,8 @@ map.on('load', () => {
           }
         });
         map.addSource('rete-archi', { type: 'geojson', data: reteGeo });
+        window.PF_VIE_PEBA = reteGeo.features.filter((f) => f.properties.peba_via);
+        if (typeof window.pf3dRefreshVie === 'function') window.pf3dRefreshVie();
 
         // Rete stradale — sfondo di riferimento, non interattiva
         map.addLayer({
@@ -727,9 +731,24 @@ document.getElementById('tb-basemaps').addEventListener('click', (e) => {
   } else {
     activeBasemaps.push(key);
     btn.classList.add('active');
+    if (key === 'satellite' && typeof window.pf3dDisable === 'function') window.pf3dDisable();
   }
   renderBasemaps();
 });
+
+window.pfDeactivateSatellite = function () {
+  const idx = activeBasemaps.indexOf('satellite');
+  if (idx === -1) return;
+  activeBasemaps.splice(idx, 1);
+  const btn = document.querySelector('#tb-basemaps [data-basemap="satellite"]');
+  if (btn) btn.classList.remove('active');
+  if (activeBasemaps.length === 0) {
+    activeBasemaps.push('osm');
+    const osmBtn = document.querySelector('#tb-basemaps [data-basemap="osm"]');
+    if (osmBtn) osmBtn.classList.add('active');
+  }
+  renderBasemaps();
+};
 
 document.getElementById('tb-basemap-opacity').addEventListener('input', (e) => {
   topBasemapOpacity = Number(e.target.value) / 100;

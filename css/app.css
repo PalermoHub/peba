@@ -54,6 +54,26 @@
   display: block;
 }
 
+/* Vista 3D (Cesium) come base map alternativa a schermo intero */
+#cesium-container {
+  position: absolute;
+  inset: 0;
+  background: #000;
+}
+#cesium-container[hidden] { display: none; }
+.cesium-status {
+  position: absolute;
+  bottom: 16px;
+  left: 16px;
+  z-index: 2;
+  color: var(--c-white);
+  font-size: 13px;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.7);
+  max-width: 80vw;
+  pointer-events: none;
+}
+.cesium-status[hidden] { display: none; }
+
 /* Modale galleria foto */
 .photo-modal {
   position: fixed;
