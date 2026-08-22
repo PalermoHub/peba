@@ -277,6 +277,11 @@ function setMapTheme(theme) {
   if (map.getLayer('rete-archi-peba-line')) {
     map.setPaintProperty('rete-archi-peba-line', 'line-color', theme === 'gruppo' ? RAMP_GRUPPO_VIA : RAMP_LIVELLO_VIA);
   }
+  ['peba-edifici', 'peba-aree-verdi'].forEach((id) => {
+    const ramp = theme === 'gruppo' ? RAMP_GRUPPO : RAMP_LIVELLO;
+    if (map.getLayer(`${id}-fill`)) map.setPaintProperty(`${id}-fill`, 'fill-color', ramp);
+    if (map.getLayer(`${id}-outline`)) map.setPaintProperty(`${id}-outline`, 'line-color', ramp);
+  });
   if (typeof window.pf3dRefreshVie === 'function') window.pf3dRefreshVie();
   if (typeof window.pf3dRefreshMarkers === 'function') window.pf3dRefreshMarkers();
 }
@@ -292,6 +297,10 @@ function setGruppoPaletteCBF(on) {
   if (currentMapTheme === 'gruppo') {
     if (map.getLayer('peba-punti-circle')) map.setPaintProperty('peba-punti-circle', 'circle-color', RAMP_GRUPPO);
     if (map.getLayer('rete-archi-peba-line')) map.setPaintProperty('rete-archi-peba-line', 'line-color', RAMP_GRUPPO_VIA);
+    ['peba-edifici', 'peba-aree-verdi'].forEach((id) => {
+      if (map.getLayer(`${id}-fill`)) map.setPaintProperty(`${id}-fill`, 'fill-color', RAMP_GRUPPO);
+      if (map.getLayer(`${id}-outline`)) map.setPaintProperty(`${id}-outline`, 'line-color', RAMP_GRUPPO);
+    });
   }
   if (typeof window.pf3dRefreshVie === 'function') window.pf3dRefreshVie();
   if (typeof window.pf3dRefreshMarkers === 'function') window.pf3dRefreshMarkers();
@@ -333,6 +342,68 @@ map.on('load', () => {
     });
 
     updateMapScale();
+
+    // ── Poligoni edifici/aree verdi (incl. cimiteri) — stessi geojson già usati
+    // in 3D (cesium3d.js), qui joinati per Codice coi punti PEBA e colorati
+    // con la stessa rampa (livello/gruppo). Differiti come la rete stradale. ──
+    map.once('idle', () => {
+      if (map.getSource('peba-edifici')) return;
+      const pebaByCodice = new Map(pebaGeo.features.map((f) => [f.properties.Codice, f.properties]));
+      const joinCodice = (geo) => {
+        geo.features.forEach((f) => {
+          const pp = pebaByCodice.get(f.properties.Codice);
+          if (pp) {
+            f.properties['Livello accessibilita'] = pp['Livello accessibilita'];
+            f.properties.Gruppo = pp.Gruppo;
+          }
+        });
+        return geo;
+      };
+      Promise.all([
+        fetch(DATA.pebaEdifici).then((r) => r.json()).then(joinCodice),
+        fetch(DATA.pebaAreeVerdi).then((r) => r.json()).then(joinCodice),
+      ]).then(([edificiGeo, areeVerdiGeo]) => {
+        // Nascosti finché l'utente non li attiva col toggle "Poligoni" in toolbar
+        // (in 3D restano invece sempre attivi, cesium3d.js non ha questo toggle).
+        const poligoniOn = document.getElementById('tb-poligoni')?.classList.contains('active');
+        const fillOp = poligoniOn ? 0.35 : 0;
+        const lineOp = poligoniOn ? 0.8 : 0;
+
+        map.addSource('peba-edifici', { type: 'geojson', data: edificiGeo });
+        map.addLayer({
+          id: 'peba-edifici-fill', type: 'fill', source: 'peba-edifici',
+          paint: {
+            'fill-color': currentMapTheme === 'gruppo' ? RAMP_GRUPPO : RAMP_LIVELLO,
+            'fill-opacity': fillOp,
+          },
+        }, 'peba-punti-circle');
+        map.addLayer({
+          id: 'peba-edifici-outline', type: 'line', source: 'peba-edifici',
+          paint: {
+            'line-color': currentMapTheme === 'gruppo' ? RAMP_GRUPPO : RAMP_LIVELLO,
+            'line-width': 1,
+            'line-opacity': lineOp,
+          },
+        }, 'peba-punti-circle');
+
+        map.addSource('peba-aree-verdi', { type: 'geojson', data: areeVerdiGeo });
+        map.addLayer({
+          id: 'peba-aree-verdi-fill', type: 'fill', source: 'peba-aree-verdi',
+          paint: {
+            'fill-color': currentMapTheme === 'gruppo' ? RAMP_GRUPPO : RAMP_LIVELLO,
+            'fill-opacity': fillOp,
+          },
+        }, 'peba-punti-circle');
+        map.addLayer({
+          id: 'peba-aree-verdi-outline', type: 'line', source: 'peba-aree-verdi',
+          paint: {
+            'line-color': currentMapTheme === 'gruppo' ? RAMP_GRUPPO : RAMP_LIVELLO,
+            'line-width': 1,
+            'line-opacity': lineOp,
+          },
+        }, 'peba-punti-circle');
+      });
+    });
 
     // ── Rete stradale — sorgente grande (~7.7 MB), differita dopo il primo
     // rendering per non contendere banda/priorità col caricamento dei punti ──
@@ -836,6 +907,27 @@ document.getElementById('tb-vie').addEventListener('click', (e) => {
     map.setPaintProperty('rete-archi-line', 'line-opacity', on ? 0.55 : 0);
   }
 });
+
+// ── Toolbar: poligoni edifici/aree verdi/cimiteri on/off. Stati indipendenti
+// per 2D (default spento) e 3D (default acceso, gestito in cesium3d.js) — il
+// bottone smista al toggle giusto in base alla vista attualmente attiva.
+let poligoni2DOn = false;
+document.getElementById('tb-poligoni').addEventListener('click', (e) => {
+  const btn = e.currentTarget;
+  const on = !btn.classList.contains('active');
+  btn.classList.toggle('active', on);
+
+  if (window.pf3dIsActive && window.pf3dIsActive()) {
+    if (window.pf3dSetPoligoniVisible) window.pf3dSetPoligoniVisible(on);
+    return;
+  }
+  poligoni2DOn = on;
+  ['peba-edifici', 'peba-aree-verdi'].forEach((id) => {
+    if (map.getLayer(`${id}-fill`)) map.setPaintProperty(`${id}-fill`, 'fill-opacity', on ? 0.35 : 0);
+    if (map.getLayer(`${id}-outline`)) map.setPaintProperty(`${id}-outline`, 'line-opacity', on ? 0.8 : 0);
+  });
+});
+window.pfPoligoni2DOn = () => poligoni2DOn;
 
 // ── Fullscreen ────────────────────────────────────────────────────────────
 document.getElementById('tb-fullscreen').addEventListener('click', () => {

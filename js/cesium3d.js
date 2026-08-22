@@ -6,6 +6,7 @@
   const statusEl = document.getElementById('cesium-status');
   const mapEl = document.getElementById('map');
   const toggleBtn = document.getElementById('tb-3d');
+  const poligoniBtn = document.getElementById('tb-poligoni');
   const navEl = document.getElementById('pf3d-nav');
   const compassEl = document.getElementById('pf3d-compass');
   const compassRoseEl = document.getElementById('pf3d-compass-rose');
@@ -31,6 +32,17 @@
   let areaEntities = [];
   const edificiByCodice = new Map();
   const areeVerdiByCodice = new Map();
+  // Edifici/aree verdi/cimiteri: attivi di default in 3D, ma disattivabili
+  // dallo stesso bottone toolbar "Poligoni" usato in 2D (stato indipendente).
+  let poligoniVisible = true;
+  function setPoligoniVisible3D(on) {
+    poligoniVisible = on;
+    poligonoEntities.forEach((e) => { if (e.polygon) e.polygon.show = on; });
+    areaEntities.forEach((e) => { if (e.polygon) e.polygon.show = on; });
+  }
+  window.pf3dIsActive = () => active;
+  window.pf3dSetPoligoniVisible = setPoligoniVisible3D;
+  window.pf3dPoligoniVisible = () => poligoniVisible;
 
   fetch(DATA.pebaEdifici).then((r) => r.json()).then((geo) => {
     geo.features.forEach((f) => edificiByCodice.set(f.properties.Codice, f));
@@ -318,6 +330,7 @@
             outline: true,
             outlineColor: Cesium.Color.fromCssColorString(colore),
             classificationType: Cesium.ClassificationType.BOTH,
+            show: poligoniVisible,
           },
           properties: { codice: p.Codice },
         });
@@ -536,6 +549,7 @@
           material: Cesium.Color.fromCssColorString(colore).withAlpha(0.55),
           outline: true,
           outlineColor: Cesium.Color.fromCssColorString(colore),
+          show: poligoniVisible,
         },
         properties: { codice: p.Codice },
       });
@@ -579,6 +593,9 @@
     if (typeof window.pfDeactivateSatellite === 'function') window.pfDeactivateSatellite();
     active = true;
     toggleBtn.classList.add('active');
+    // Stato "Poligoni" indipendente dal 2D: di default attivo in 3D, ma
+    // resta cliccabile per disattivarlo (window.pf3dSetPoligoniVisible).
+    if (poligoniBtn) poligoniBtn.classList.toggle('active', poligoniVisible);
     mapEl.style.display = 'none';
     container.hidden = false;
     statusEl.hidden = false;
@@ -608,6 +625,9 @@
     sincronizzaMappaDa3D();
     active = false;
     toggleBtn.classList.remove('active');
+    if (poligoniBtn) {
+      poligoniBtn.classList.toggle('active', typeof window.pfPoligoni2DOn === 'function' && window.pfPoligoni2DOn());
+    }
     mapEl.style.display = '';
     container.hidden = true;
     statusEl.hidden = true;
