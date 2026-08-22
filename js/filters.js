@@ -194,6 +194,7 @@ function pfApplyMapFilter() {
   const zoomBtn = document.getElementById('pf-zoom');
   if (zoomBtn) zoomBtn.disabled = matched.length === 0;
   pfLastMatched = matched;
+  if (typeof window.pf3dRefreshMarkers === 'function') window.pf3dRefreshMarkers();
 }
 let pfLastMatched = [];
 

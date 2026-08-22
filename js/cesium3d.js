@@ -50,9 +50,16 @@
   window.pf3dRefreshVie = refreshVie;
 
   // Conversione approssimata zoom (slippy map, stile MapLibre/Google) <-> quota camera Cesium.
+  // Correzione coseno-latitudine: la formula base è tarata sull'equatore (dove un tile
+  // slippy copre la massima estensione al suolo); a Palermo (~38°N) senza il coseno la
+  // quota risulterebbe ~21% troppo alta, cioè lo zoom 3D apparirebbe "più lontano" del 2D.
   const ZOOM_ALTITUDE_K = 591657527.591555;
-  function zoomAAltitudine(zoom) { return ZOOM_ALTITUDE_K / Math.pow(2, zoom); }
-  function altitudineAZoom(alt) { return Math.log2(ZOOM_ALTITUDE_K / Math.max(alt, 1)); }
+  function zoomAAltitudine(zoom, latDeg) {
+    return (ZOOM_ALTITUDE_K * Math.cos(Cesium.Math.toRadians(latDeg))) / Math.pow(2, zoom);
+  }
+  function altitudineAZoom(alt, latDeg) {
+    return Math.log2((ZOOM_ALTITUDE_K * Math.cos(Cesium.Math.toRadians(latDeg))) / Math.max(alt, 1));
+  }
 
   function coloreMarker(p) {
     if (typeof currentMapTheme !== 'undefined' && currentMapTheme === 'gruppo') {
@@ -72,29 +79,47 @@
         navigationHelpButton: false, geocoder: false,
         fullscreenButton: false, infoBox: false, selectionIndicator: false,
         skyAtmosphere: false,
+        // Niente layer immagini di base: coperto interamente dal tileset fotorealistico,
+        // ma di default Viewer scarica comunque un layer ion/Bing — banda sprecata che
+        // rallenta il caricamento e appesantisce ogni frame.
+        imageryProvider: false,
+        // Ridisegna solo quando qualcosa cambia (camera, tile) invece che ad ogni frame:
+        // con un tileset pesante il render continuo di default è il principale motivo
+        // dei frame-drop segnalati in console (requestAnimationFrame handler > 400ms).
+        requestRenderMode: true,
+        maximumRenderTimeChange: Infinity,
       });
-      // Globo nascosto (il tileset fotorealistico copre la resa) ma non rimosso:
-      // serve come ellissoide di riferimento per il pivot di orbit/tilt del mouse.
-      viewer.scene.globe.show = false;
+      // Globo reso invisibile via translucency (NON show=false): con show=false
+      // Cesium smette di aggiornare i tile del globo, e ScreenSpaceCameraController
+      // usa proprio quei tile per calcolare il pivot di orbit/tilt (Globe.pickWorldCoordinates
+      // itera this._surface._tilesRenderedThisFrame, vuoto se show=false) — risultato:
+      // rotazione e beccheggio smettono di rispondere al trascinamento del mouse.
+      // Con alpha=0 il globo resta "attivo" per il picking ma non si vede (coperto dal tileset).
+      viewer.scene.globe.translucency.enabled = true;
+      viewer.scene.globe.translucency.frontFaceAlpha = 0;
+      viewer.scene.globe.translucency.backFaceAlpha = 0;
+      Cesium.RequestScheduler.requestsByServer['tile.googleapis.com:443'] = 18;
+      const tileset = await Cesium.createGooglePhotorealistic3DTileset();
+      // Caricamento più veloce: tile più grossolani (SSE più alto) e priorità dinamica
+      // in base alla distanza dalla camera, invece del default fine/uniforme.
+      tileset.maximumScreenSpaceError = 24;
+      tileset.dynamicScreenSpaceError = true;
+      viewer.scene.primitives.add(tileset);
+
+      // Il binding di default per il beccheggio (tasto centrale, o Ctrl+sinistro) non è
+      // scopribile: la mappa 2D qui ha pitch/rotate disattivati (map.js), quindi l'utente
+      // arriva al 3D senza alcuna aspettativa pregressa. Uso la convenzione Google Maps/
+      // Mapbox — trascinamento con tasto destro — molto più intuitiva col mouse.
       const controller = viewer.scene.screenSpaceCameraController;
-      controller.enableRotate = true;
-      controller.enableTilt = true;
-      controller.enableLook = true;
-      // Beccheggio (tilt) di default richiede middle-drag o Ctrl+drag: poco scopribile.
-      // Qui basta il tasto destro del mouse (senza modificatori), zoom resta sulla rotellina.
-      controller.rotateEventTypes = Cesium.CameraEventType.LEFT_DRAG;
       controller.tiltEventTypes = [
-        Cesium.CameraEventType.MIDDLE_DRAG,
         Cesium.CameraEventType.RIGHT_DRAG,
+        Cesium.CameraEventType.MIDDLE_DRAG,
         Cesium.CameraEventType.PINCH,
         { eventType: Cesium.CameraEventType.LEFT_DRAG, modifier: Cesium.KeyboardEventModifier.CTRL },
       ];
-      controller.zoomEventTypes = [Cesium.CameraEventType.WHEEL, Cesium.CameraEventType.PINCH];
-      Cesium.RequestScheduler.requestsByServer['tile.googleapis.com:443'] = 18;
-      const tileset = await Cesium.createGooglePhotorealistic3DTileset();
-      viewer.scene.primitives.add(tileset);
 
-      const handler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
+      const canvas = viewer.scene.canvas;
+      const handler = new Cesium.ScreenSpaceEventHandler(canvas);
       handler.setInputAction((click) => {
         const picked = viewer.scene.drillPick(click.position);
         for (const obj of picked) {
@@ -110,18 +135,11 @@
         }
       }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
 
-      // Cursore a manina sopra un punto PEBA, come sull'equivalente layer 2D (map.js mouseenter/mouseleave).
       handler.setInputAction((movement) => {
-        const picked = viewer.scene.pick(movement.endPosition);
-        const suMarker = !!(picked && picked.id && picked.id.properties && picked.id.properties.codice);
-        viewer.scene.canvas.style.cursor = suMarker ? 'pointer' : '';
+        const picked = viewer.scene.drillPick(movement.endPosition, 5);
+        const overMarker = picked.some((obj) => obj.id && obj.id.properties && obj.id.properties.codice);
+        canvas.style.cursor = overMarker ? 'pointer' : '';
       }, Cesium.ScreenSpaceEventType.MOUSE_MOVE);
-
-      // Sync continua 3D -> 2D: ogni movimento camera (drag/zoom/tilt) riporta centro/zoom/
-      // bearing/pitch sulla mappa MapLibre sottostante, cosi' resta coerente anche mentre e'
-      // nascosta (es. legenda/filtri che leggono map.getCenter()/getZoom()).
-      viewer.camera.percentageChanged = 0.02;
-      viewer.camera.changed.addEventListener(() => { if (active) sincronizzaMappaDa3D(); });
     })();
     return initPromise;
   }
@@ -180,7 +198,7 @@
   function sincronizzaCameraDa2D() {
     if (typeof map === 'undefined') return;
     const center = map.getCenter();
-    const altitudine = zoomAAltitudine(map.getZoom());
+    const altitudine = zoomAAltitudine(map.getZoom(), center.lat);
     viewer.camera.setView({
       destination: Cesium.Cartesian3.fromDegrees(center.lng, center.lat, altitudine),
       orientation: {
@@ -194,7 +212,7 @@
   function sincronizzaMappaDa3D() {
     if (typeof map === 'undefined' || !viewer) return;
     const carto = viewer.camera.positionCartographic;
-    const zoom = altitudineAZoom(carto.height);
+    const zoom = altitudineAZoom(carto.height, Cesium.Math.toDegrees(carto.latitude));
     const pitch = Cesium.Math.toDegrees(viewer.camera.pitch) + 90;
     map.jumpTo({
       center: [Cesium.Math.toDegrees(carto.longitude), Cesium.Math.toDegrees(carto.latitude)],
@@ -222,9 +240,15 @@
       sincronizzaCameraDa2D();
       refreshMarkers();
       refreshVie();
-      statusEl.textContent = '';
-      statusEl.hidden = true;
       viewer.resize();
+      if (!window.localStorage.getItem('pf3dHintShown')) {
+        statusEl.textContent = 'Trascina col sinistro per ruotare, col destro per inclinare la vista.';
+        window.localStorage.setItem('pf3dHintShown', '1');
+        setTimeout(() => { statusEl.textContent = ''; statusEl.hidden = true; }, 4000);
+      } else {
+        statusEl.textContent = '';
+        statusEl.hidden = true;
+      }
     } catch (err) {
       statusEl.textContent = 'Errore caricamento vista 3D: ' + (err && err.message ? err.message : err);
     }
