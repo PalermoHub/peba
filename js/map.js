@@ -5,6 +5,7 @@ const BOUNDS = [13.10, 37.94, 13.60, 38.33];
 
 const DATA = {
   peba: 'dati/peba.geojson',
+  pebaEdifici: 'dati/peba_edifici.geojson',
   reteArchi: 'dati/geojson/rete_archi.geojson',
   codiceOggettoPdf: 'dati/codice_oggetto_pdf.json',
 };

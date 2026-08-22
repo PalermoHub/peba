@@ -207,6 +207,7 @@ function pfZoomToMatched() {
     minLat = Math.min(minLat, lat); maxLat = Math.max(maxLat, lat);
   });
   map.fitBounds([[minLng, minLat], [maxLng, maxLat]], { padding: 60, maxZoom: 17 });
+  if (typeof window.pf3dZoomToMatched === 'function') window.pf3dZoomToMatched();
 }
 
 // ── Render completo (chiamato ad ogni cambio stato) ───────────────────────

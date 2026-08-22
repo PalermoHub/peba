@@ -15,6 +15,13 @@
   const propsByCodice = new Map();
   let markerEntities = [];
   let viaEntities = [];
+  let poligonoEntities = [];
+  const edificiByCodice = new Map();
+
+  fetch(DATA.pebaEdifici).then((r) => r.json()).then((geo) => {
+    geo.features.forEach((f) => edificiByCodice.set(f.properties.Codice, f));
+    if (active) refreshMarkers();
+  });
 
   function coloreVia(props) {
     if (typeof currentMapTheme !== 'undefined' && currentMapTheme === 'gruppo') {
@@ -126,9 +133,14 @@
           const codice = obj.id && obj.id.properties && obj.id.properties.codice && obj.id.properties.codice.getValue();
           if (codice && propsByCodice.has(codice)) {
             const p = propsByCodice.get(codice);
-            const pos = obj.id.position.getValue(viewer.clock.currentTime);
-            const carto = Cesium.Cartographic.fromCartesian(pos);
-            const lngLat = { lng: Cesium.Math.toDegrees(carto.longitude), lat: Cesium.Math.toDegrees(carto.latitude) };
+            // pickPosition invece di entity.position: funziona sia per i marker
+            // (point) sia per i poligoni edificio, che non hanno una .position.
+            const pos = viewer.scene.pickPosition(click.position);
+            let lngLat;
+            if (pos) {
+              const carto = Cesium.Cartographic.fromCartesian(pos);
+              lngLat = { lng: Cesium.Math.toDegrees(carto.longitude), lat: Cesium.Math.toDegrees(carto.latitude) };
+            }
             if (typeof window.showPebaDetail === 'function') window.showPebaDetail(p, lngLat);
             return;
           }
@@ -172,7 +184,7 @@
     markerEntities = [];
     propsByCodice.clear();
 
-    const fonte = (typeof pfLastMatched !== 'undefined' && pfLastMatched.length)
+    const fonte = typeof pfLastMatched !== 'undefined'
       ? pfLastMatched
       : (typeof PF_FEATURES !== 'undefined' ? PF_FEATURES : []);
 
@@ -214,6 +226,163 @@
         properties: { codice },
       });
       markerEntities.push(entity);
+    });
+
+    refreshEdifici(fonte);
+  }
+
+  function centroideAnello(ring) {
+    let sx = 0, sy = 0;
+    ring.forEach(([x, y]) => { sx += x; sy += y; });
+    return [sx / ring.length, sy / ring.length];
+  }
+
+  // Spinge il vertice oltre il perimetro dell'edificio (verso il marciapiede):
+  // campionare la quota esattamente sul vertice intercetta il tetto (il tileset
+  // fotorealistico è una mesh piena), non la strada sottostante.
+  function spingiFuori(vertex, centroid, metri) {
+    const [vlng, vlat] = vertex;
+    const [clng, clat] = centroid;
+    const mPerDegLng = 111320 * Math.cos((vlat * Math.PI) / 180);
+    const mPerDegLat = 111320;
+    const dxM = (vlng - clng) * mPerDegLng;
+    const dyM = (vlat - clat) * mPerDegLat;
+    const lenM = Math.hypot(dxM, dyM) || 1;
+    const nDxM = dxM + (dxM / lenM) * metri;
+    const nDyM = dyM + (dyM / lenM) * metri;
+    return [clng + nDxM / mPerDegLng, clat + nDyM / mPerDegLat];
+  }
+
+  function mediana(nums) {
+    const s = nums.slice().sort((a, b) => a - b);
+    const mid = Math.floor(s.length / 2);
+    return s.length % 2 ? s[mid] : (s[mid - 1] + s[mid]) / 2;
+  }
+
+  let edificiRequestId = 0;
+  // Cache runtime: fallback per gli edifici senza "quota" precotta nel geojson
+  // (la quota reale non cambia mai — una volta cotta col comando pf3dBakeQuote()
+  // in console e incollata in dati/peba_edifici.geojson, si campiona zero volte).
+  const quotaTerrenoByCodice = new Map();
+
+  // Campiona la quota-marciapiede (mediana di pochi punti spinti fuori dalla
+  // sagoma, vedi spingiFuori) per gli edifici passati e la mette in cache.
+  // Ritorna false se l'ultima richiesta refreshEdifici è stata superata da una
+  // più recente (filtro cambiato nel frattempo) — chi chiama deve abortire.
+  async function campionaQuote(entries, requestId) {
+    if (!viewer.scene.sampleHeightSupported || !entries.length) return true;
+    const MAX_VERTICI = 4; // sottocampiona: basta il perimetro, non ogni vertice
+    const samples = []; // Cartographic
+    const ranges = []; // [start, end) in samples, per edificio
+    entries.forEach(({ feature }) => {
+      const outer = feature.geometry.coordinates[0];
+      const centroid = centroideAnello(outer);
+      const passo = Math.max(1, Math.floor(outer.length / MAX_VERTICI));
+      const start = samples.length;
+      for (let vi = 0; vi < outer.length; vi += passo) {
+        const [lng, lat] = spingiFuori(outer[vi], centroid, 3);
+        samples.push(Cesium.Cartographic.fromDegrees(lng, lat));
+      }
+      ranges.push([start, samples.length]);
+    });
+
+    try {
+      await viewer.scene.sampleHeightMostDetailed(samples);
+    } catch { /* tileset non pronto: fallback quota 0 sotto */ }
+    if (requestId != null && requestId !== edificiRequestId) return false;
+
+    entries.forEach(({ codice }, i) => {
+      const [start, end] = ranges[i];
+      const valid = samples.slice(start, end).map((c) => c.height).filter((h) => Number.isFinite(h));
+      quotaTerrenoByCodice.set(codice, valid.length ? mediana(valid) : 0);
+    });
+    return true;
+  }
+
+  // Comando manuale, una tantum: da console (`pf3dBakeQuote()`) a vista 3D
+  // attiva, campiona la quota di TUTTI gli edifici PEBA e scarica un JSON
+  // {Codice: quota} da incollare come campo "quota" in peba_edifici.geojson —
+  // dopo, refreshEdifici legge quel campo e non campiona più a runtime.
+  window.pf3dBakeQuote = async function pf3dBakeQuote() {
+    if (!viewer) { console.warn('Attiva prima la vista 3D.'); return; }
+    const entries = Array.from(edificiByCodice.entries()).map(([codice, feature]) => ({ codice, feature }));
+    await campionaQuote(entries, null);
+    const out = {};
+    entries.forEach(({ codice }) => { out[codice] = quotaTerrenoByCodice.get(codice); });
+    console.log('Quote calcolate:', out);
+    const blob = new Blob([JSON.stringify(out, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'quote_edifici.json';
+    a.click();
+    return out;
+  };
+
+  // Poligoni estrusi solo per gli edifici PEBA attualmente in vista (stesso
+  // filtro/fonte dei marker): footprint reale da dati/peba_edifici.geojson
+  // (join offline punto PEBA -> edificato.pmtiles), non dal tileset
+  // fotorealistico che essendo mesh unica non è stilizzabile per edificio.
+  //
+  // La base non usa HeightReference.CLAMP_TO_GROUND: quel clamp campiona la
+  // quota esattamente sotto ogni vertice, che per un tetto pieno è la quota
+  // del TETTO, non della strada — risultato: il poligono galleggiava in aria
+  // sopra l'edificio. Si usa invece la quota reale del marciapiede: dal campo
+  // "quota" pre-cotto nel geojson se presente, altrimenti campionata al volo.
+  async function refreshEdifici(fonte) {
+    const myRequest = ++edificiRequestId;
+    if (!viewer) return;
+
+    const targets = [];
+    fonte.forEach(({ p }) => {
+      const feature = p.Codice && edificiByCodice.get(p.Codice);
+      if (feature) targets.push({ p, feature });
+    });
+
+    if (!targets.length) {
+      poligonoEntities.forEach((e) => viewer.entities.remove(e));
+      poligonoEntities = [];
+      return;
+    }
+
+    const daCampionare = targets.filter(({ p, feature }) => !Number.isFinite(feature.properties.quota)
+      && !quotaTerrenoByCodice.has(p.Codice));
+
+    if (daCampionare.length) {
+      const ok = await campionaQuote(
+        daCampionare.map(({ p, feature }) => ({ codice: p.Codice, feature })),
+        myRequest,
+      );
+      if (!ok) return; // filtro cambiato nel frattempo
+    }
+
+    const groundByTarget = targets.map(({ p, feature }) => (Number.isFinite(feature.properties.quota)
+      ? feature.properties.quota
+      : quotaTerrenoByCodice.get(p.Codice)) || 0);
+
+    poligonoEntities.forEach((e) => viewer.entities.remove(e));
+    poligonoEntities = [];
+
+    targets.forEach(({ p, feature }, i) => {
+      const colore = coloreMarker(p);
+      const [outer, ...holes] = feature.geometry.coordinates;
+      const positions = Cesium.Cartesian3.fromDegreesArray(outer.flatMap(([lng, lat]) => [lng, lat]));
+      const holePolys = holes.map((ring) => new Cesium.PolygonHierarchy(
+        Cesium.Cartesian3.fromDegreesArray(ring.flatMap(([lng, lat]) => [lng, lat])),
+      ));
+      const altezza = feature.properties.altezza > 1 ? feature.properties.altezza : 8;
+      const base = groundByTarget[i];
+      const entity = viewer.entities.add({
+        polygon: {
+          hierarchy: new Cesium.PolygonHierarchy(positions, holePolys),
+          height: base,
+          extrudedHeight: base + altezza,
+          material: Cesium.Color.fromCssColorString(colore).withAlpha(0.55),
+          outline: true,
+          outlineColor: Cesium.Color.fromCssColorString(colore),
+        },
+        properties: { codice: p.Codice },
+      });
+      poligonoEntities.push(entity);
     });
   }
 
@@ -291,4 +460,12 @@
   toggleBtn.addEventListener('click', () => { active ? disable() : enable(); });
   window.pf3dDisable = () => { if (active) disable(); };
   window.pf3dRefreshMarkers = refreshMarkers;
+  // Sincronizza lo zoom-su-filtro (legenda/#pf-zoom) anche sulla camera 3D:
+  // pfZoomToMatched in filters.js muove solo la camera 2D (map.fitBounds),
+  // che in vista 3D è nascosta e non influenza Cesium — senza questo la
+  // camera 3D resta ferma dov'era e i marker filtrati finiscono fuori vista.
+  window.pf3dZoomToMatched = () => {
+    if (!active || !viewer || !markerEntities.length) return;
+    viewer.flyTo(markerEntities, { duration: 1.2 });
+  };
 })();
