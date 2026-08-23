@@ -776,18 +776,31 @@ function openFeaturePanel(title, lngLat, sections) {
 const hoverPopup = new maplibregl.Popup({
   closeButton: false, closeOnClick: false, offset: 10, className: 'peba-hover-popup',
 });
+// Pallino e badge seguono il tema colore mappa attivo (tb-theme: Livello/Gruppo),
+// così il tooltip mostra lo stesso attributo con cui i punti sono colorati sulla mappa.
 function pfShowHoverPopup(p, lngLat) {
   const nome = esc(p['Nome Immobile']) || esc(p.Gruppo) || '(senza nome)';
   const codice = esc(p.Codice);
   const label = codice ? `${codice} – ${nome}` : nome;
-  const colGruppo = coloriGruppoAttivi()[p.Gruppo] || '#999999';
-  const livello = p['Livello accessibilita'];
-  const colLivello = badgeColori(livello);
-  const badgeHtml = livello
-    ? `<span class="mp-badge" style="background:${colLivello.bg};color:${colLivello.text};border-color:${colLivello.border};">${esc(livello)}</span>`
-    : '';
+
+  let dotColor, badgeHtml;
+  if (currentMapTheme === 'gruppo') {
+    dotColor = coloriGruppoAttivi()[p.Gruppo] || '#999999';
+    const colGruppo = badgeColoriGruppo(p.Gruppo);
+    badgeHtml = p.Gruppo
+      ? `<span class="mp-badge" style="background:${colGruppo.bg};color:${colGruppo.text};border-color:${colGruppo.border};">${esc(p.Gruppo)}</span>`
+      : '';
+  } else {
+    const livello = p['Livello accessibilita'];
+    dotColor = COLORI_ACCESSIBILITA[livello] || COLORI_ACCESSIBILITA['Non valutabile'];
+    const colLivello = badgeColori(livello);
+    badgeHtml = livello
+      ? `<span class="mp-badge" style="background:${colLivello.bg};color:${colLivello.text};border-color:${colLivello.border};">${esc(livello)}</span>`
+      : '';
+  }
+
   hoverPopup.setLngLat(lngLat).setHTML(`
-    <div class="mp-title"><span class="mp-dot" style="background:${colGruppo};"></span>${label}</div>
+    <div class="mp-title"><span class="mp-dot" style="background:${dotColor};"></span>${label}</div>
     ${badgeHtml}
   `).addTo(map);
 }
