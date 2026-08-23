@@ -1099,6 +1099,16 @@ function pfNavigateScheda(delta) {
 }
 document.getElementById('rp-punto-prev')?.addEventListener('click', () => pfNavigateScheda(-1));
 document.getElementById('rp-punto-next')?.addEventListener('click', () => pfNavigateScheda(1));
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+  const photoModal = document.getElementById('photo-modal');
+  if (photoModal && !photoModal.hidden) return;
+  const nav = document.getElementById('rp-punto-nav');
+  if (!nav || nav.hidden) return;
+  const tag = document.activeElement?.tagName;
+  if (tag === 'INPUT' || tag === 'TEXTAREA' || document.activeElement?.isContentEditable) return;
+  pfNavigateScheda(e.key === 'ArrowLeft' ? -1 : 1);
+});
 
 // Ridisegna il feature (punto o poligono) cliccato nella source 'peba-highlight'
 // (layer dedicati aggiunti in map.on('load'), sempre sopra tutto). null = clear.
