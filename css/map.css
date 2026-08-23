@@ -2553,6 +2553,9 @@ body:has(#rp-wrap.open) #info-panel {
     background: #fff8f0;
     color: #ff9900;
   }
+
+  /* Spazio per non finire sotto il bottone chiusura (assoluto, top-right) */
+  #rp-nav { padding-right: 44px; }
 }
 
 /* ════════════════════════════════════════
