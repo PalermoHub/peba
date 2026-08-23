@@ -404,6 +404,7 @@
       <button class="ptab" data-tab="metodologia">Metodologia</button>
       <button class="ptab" data-tab="relazione">Relazione Generale</button>
       <button class="ptab" data-tab="indice-pdf">Indice dei PDF</button>
+      <button class="ptab" data-tab="costi">Costi</button>
     </div>
     <button id="panel-back-top" title="Torna in cima" aria-label="Torna in cima">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -897,6 +898,51 @@
             <tr><td><a href="dati/pdf/1792335239_2026_08_18_23.pdf#page=1" target="_blank" rel="noopener">_23.pdf</a></td><td><a href="dati/pdf/1792335239_2026_08_18_23.pdf#page=115" target="_blank" rel="noopener">115</a></td><td>5. Vie cittadine (blocco 4)</td><td>VC_40-VC_52</td></tr>
             <tr><td><a href="dati/pdf/1792335239_2026_08_18_18.pdf#page=1" target="_blank" rel="noopener">_18.pdf</a></td><td><a href="dati/pdf/1792335239_2026_08_18_18.pdf#page=70" target="_blank" rel="noopener">70</a></td><td>7. Aree verdi</td><td>AV_01-AV_23</td></tr>
           </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="tab-pane" data-tab="costi">
+      <div class="panel-section">
+        <h3>Costo stimato degli interventi</h3>
+        <p class="panel-note">
+          Costo totale interventi per ciascuna scheda, incrociando le tabelle costi (stima costi
+          viabilità, aree verdi, edifici) con la scheda di rilievo corrispondente. Il costo di ogni
+          scheda è mostrato anche nel pannello di dettaglio dell'immobile, quando disponibile.
+        </p>
+        <p class="panel-note panel-note-warn">
+          10 codici viabilità nel documento sorgente delle stime costi sono etichettati per errore
+          con prefisso <code>VU_</code> invece di <code>VC_</code> (VU_09→VC_09, VU_10→VC_10,
+          VU_17→VC_17, VU_18→VC_18, VU_25→VC_25, VU_26→VC_26, VU_33→VC_33, VU_34→VC_34,
+          VU_41→VC_41, VU_42→VC_42): corretti nei dati mostrati. La scheda <code>AV_01</code> non ha
+          una tabella costi nel documento sorgente (nessun intervento stimato).
+        </p>
+      </div>
+      <div class="panel-section">
+        <h3>Totale per categoria</h3>
+        <table class="rp-table">
+          <thead><tr><th>Categoria</th><th>N. schede</th><th>Costo totale</th></tr></thead>
+          <tbody>
+            <tr><td>3, Percorsi UNESCO</td><td>6</td><td>2.284.626,97 €</td></tr>
+            <tr><td>4, Vie storiche b1</td><td>9</td><td>7.197.440,22 €</td></tr>
+            <tr><td>4, Vie storiche b2</td><td>10</td><td>3.774.729,45 €</td></tr>
+            <tr><td>4, Vie storiche b3</td><td>10</td><td>9.825.909,44 €</td></tr>
+            <tr><td>4, Vie storiche b4</td><td>10</td><td>7.612.282,17 €</td></tr>
+            <tr><td>4, Vie storiche b5</td><td>18</td><td>14.924.126,11 €</td></tr>
+            <tr><td>5, Vie cittadine b1</td><td>17</td><td>17.080.157,82 €</td></tr>
+            <tr><td>5, Vie cittadine b2</td><td>11</td><td>8.251.702,02 €</td></tr>
+            <tr><td>5, Vie cittadine b3</td><td>11</td><td>14.896.305,22 €</td></tr>
+            <tr><td>5, Vie cittadine b4</td><td>13</td><td>15.951.413,09 €</td></tr>
+            <tr><td>6, Piazze</td><td>4</td><td>685.141,78 €</td></tr>
+            <tr><td>7, Aree verdi</td><td>22</td><td>5.365.173,12 €</td></tr>
+            <tr><td>8, Asili</td><td>26</td><td>235.065,50 €</td></tr>
+            <tr><td>9, Scuole</td><td>28</td><td>1.226.731,68 €</td></tr>
+            <tr><td>10, Uffici</td><td>24</td><td>1.015.224,32 €</td></tr>
+            <tr><td>11, Musei</td><td>3</td><td>170.126,20 €</td></tr>
+            <tr><td>12, Siti UNESCO</td><td>7</td><td>664.016,49 €</td></tr>
+          </tbody>
+          <tfoot>
+            <tr><td><strong>Totale complessivo</strong></td><td><strong>229</strong></td><td><strong>111.160.171,60 €</strong></td></tr>
+          </tfoot>
         </table>
       </div>
     </div>

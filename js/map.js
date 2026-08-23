@@ -37,6 +37,7 @@ const DATA = {
   pebaAreeVerdi: 'dati/peba_aree_verdi.geojson',
   reteArchi: 'dati/geojson/rete_archi.geojson',
   codiceOggettoPdf: 'dati/codice_oggetto_pdf.json',
+  costiPerScheda: 'dati/costi_per_scheda_corretti.json',
 };
 
 // Dimensione in byte di ogni file dati/pdf/*.pdf (valore statico: evita una seconda fetch)
@@ -74,6 +75,16 @@ const CODICE_PDF = new Map();
 fetch(DATA.codiceOggettoPdf).then((r) => r.json()).then((elenco) => {
   elenco.forEach((v) => { if (v.codice && v.file_pdf) CODICE_PDF.set(v.codice, v.file_pdf); });
 }).catch(() => {});
+
+// Mappa Codice -> costo stimato interventi (dati/costi_per_scheda_corretti.json)
+const CODICE_COSTO = new Map();
+fetch(DATA.costiPerScheda).then((r) => r.json()).then((obj) => {
+  Object.entries(obj).forEach(([codice, costo]) => CODICE_COSTO.set(codice, costo));
+}).catch(() => {});
+
+function fmtEuro(v) {
+  return `${Number(v).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`;
+}
 
 function fmtDimensioneFile(bytes) {
   if (!bytes) return '';
@@ -846,6 +857,9 @@ function mediaPunteggioCircoscrizione(circoscrizione) {
 function showPebaDetail(p, lngLat) {
   const anagrafica = rpSec('Anagrafica');
   if (p.Codice) anagrafica.appendChild(rpBadgeRow('Codice', esc(p.Codice), badgeColoriGruppo(p.Gruppo)));
+  if (p.Codice && CODICE_COSTO.has(p.Codice)) {
+    anagrafica.appendChild(rpBadgeRow('Costo stimato', fmtEuro(CODICE_COSTO.get(p.Codice)), { bg: '#16a34a22', text: '#15803d', border: '#16a34a88' }));
+  }
   anagrafica.appendChild(rpRow('Nome', esc(p['Nome Immobile']) || esc(p.Gruppo) || '(senza nome)'));
   anagrafica.appendChild(rpRow('Indirizzo', esc(p.Indirizzo) || esc(p['Nome/Localizzazione'])));
   anagrafica.appendChild(rpRow('Gruppo', esc(p.Gruppo)));
