@@ -448,7 +448,11 @@
     const samples = []; // Cartographic
     const ranges = []; // [start, end) in samples, per edificio
     entries.forEach(({ feature }) => {
-      const outer = feature.geometry.coordinates[0];
+      // MultiPolygon (edificio a più corpi, es. A_10): un'unica quota/tetto per
+      // tutto il complesso, campionata su tutti i corpi insieme.
+      const outer = feature.geometry.type === 'MultiPolygon'
+        ? feature.geometry.coordinates.flatMap((poly) => poly[0])
+        : feature.geometry.coordinates[0];
       const centroid = centroideAnello(outer);
       const passo = Math.max(1, Math.floor(outer.length / MAX_VERTICI));
       const start = samples.length;
@@ -494,7 +498,9 @@
     const samples = [];
     const ranges = [];
     entries.forEach(({ feature }) => {
-      const outer = feature.geometry.coordinates[0];
+      const outer = feature.geometry.type === 'MultiPolygon'
+        ? feature.geometry.coordinates.flatMap((poly) => poly[0])
+        : feature.geometry.coordinates[0];
       const centroid = centroideAnello(outer);
       const passo = Math.max(1, Math.floor(outer.length / MAX_VERTICI));
       const start = samples.length;
@@ -595,11 +601,12 @@
 
     targets.forEach(({ p, feature }, i) => {
       const colore = coloreMarker(p);
-      const [outer, ...holes] = feature.geometry.coordinates;
-      const positions = Cesium.Cartesian3.fromDegreesArray(outer.flatMap(([lng, lat]) => [lng, lat]));
-      const holePolys = holes.map((ring) => new Cesium.PolygonHierarchy(
-        Cesium.Cartesian3.fromDegreesArray(ring.flatMap(([lng, lat]) => [lng, lat])),
-      ));
+      // Edifici composti da più corpi di fabbrica (es. A_10, 5 poligoni OSM
+      // separati) usano MultiPolygon: un'entity Cesium per ciascun poligono,
+      // stessa quota/altezza/colore per tutti i corpi.
+      const polys = feature.geometry.type === 'MultiPolygon'
+        ? feature.geometry.coordinates
+        : [feature.geometry.coordinates];
       const altezza = feature.properties.altezza > 1 ? feature.properties.altezza : 8;
       // La quota è un unico minimo per tutto il footprint: su terreno in pendenza
       // (o con lo scarto tra mesh fotorealistica Google e campione Cesium) non
@@ -622,20 +629,28 @@
       // footprint OSM, più larghi/meno rifiniti del vecchio edificato.pmtiles) —
       // qualunque sia la causa, l'estrusione visibile non supera mai questa
       // altezza dalla base, indipendentemente da quanto "cima" risulti gonfiata.
-      const ESTRUSIONE_MAX_M = 25;
-      const entity = viewer.entities.add({
-        polygon: {
-          hierarchy: new Cesium.PolygonHierarchy(positions, holePolys),
-          height: base,
-          extrudedHeight: Math.min(cima + MARGINE_ALTO, base + ESTRUSIONE_MAX_M),
-          material: Cesium.Color.fromCssColorString(colore).withAlpha(0.55),
-          outline: true,
-          outlineColor: Cesium.Color.fromCssColorString(colore),
-          show: poligoniVisible,
-        },
-        properties: { codice: p.Codice },
+      // Gruppo Asilo: tetto a bassa quota per costruzione, cap più stretto per
+      // non farlo gonfiare col campionamento tetto di un edificio vicino più alto.
+      const ESTRUSIONE_MAX_M = p.Gruppo === 'Asilo' ? 10 : 25;
+      polys.forEach(([outer, ...holes]) => {
+        const positions = Cesium.Cartesian3.fromDegreesArray(outer.flatMap(([lng, lat]) => [lng, lat]));
+        const holePolys = holes.map((ring) => new Cesium.PolygonHierarchy(
+          Cesium.Cartesian3.fromDegreesArray(ring.flatMap(([lng, lat]) => [lng, lat])),
+        ));
+        const entity = viewer.entities.add({
+          polygon: {
+            hierarchy: new Cesium.PolygonHierarchy(positions, holePolys),
+            height: base,
+            extrudedHeight: Math.min(cima + MARGINE_ALTO, base + ESTRUSIONE_MAX_M),
+            material: Cesium.Color.fromCssColorString(colore).withAlpha(0.55),
+            outline: true,
+            outlineColor: Cesium.Color.fromCssColorString(colore),
+            show: poligoniVisible,
+          },
+          properties: { codice: p.Codice },
+        });
+        poligonoEntities.push(entity);
       });
-      poligonoEntities.push(entity);
     });
   }
 
