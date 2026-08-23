@@ -44,6 +44,43 @@
   window.pf3dSetPoligoniVisible = setPoligoniVisible3D;
   window.pf3dPoligoniVisible = () => poligoniVisible;
 
+  // Evidenziazione selezione (click su marker/poligono edificio/poligono area
+  // verde): un solo entity "doppione" ridisegnato sopra l'originale, così non
+  // serve ricordare/ripristinare lo stile originale (dipende da tema/gruppo).
+  let highlightEntity = null;
+  function pf3dHighlight(entity) {
+    if (highlightEntity) { viewer.entities.remove(highlightEntity); highlightEntity = null; }
+    if (entity) {
+      const now = Cesium.JulianDate.now();
+      if (entity.polygon) {
+        highlightEntity = viewer.entities.add({
+          polygon: {
+            hierarchy: entity.polygon.hierarchy.getValue(now),
+            height: entity.polygon.height ? entity.polygon.height.getValue(now) : undefined,
+            extrudedHeight: entity.polygon.extrudedHeight ? entity.polygon.extrudedHeight.getValue(now) : undefined,
+            classificationType: entity.polygon.classificationType ? entity.polygon.classificationType.getValue(now) : undefined,
+            fill: false,
+            outline: true,
+            outlineColor: Cesium.Color.fromCssColorString('#fbbf24'),
+            outlineWidth: 4,
+          },
+        });
+      } else if (entity.position) {
+        highlightEntity = viewer.entities.add({
+          position: entity.position.getValue(now),
+          billboard: {
+            image: window.pfReticleCanvas(),
+            width: 34,
+            height: 34,
+            heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+            disableDepthTestDistance: Number.POSITIVE_INFINITY,
+          },
+        });
+      }
+    }
+    if (viewer) viewer.scene.requestRender();
+  }
+
   fetch(DATA.pebaEdifici).then((r) => r.json()).then((geo) => {
     geo.features.forEach((f) => edificiByCodice.set(f.properties.Codice, f));
     if (active) refreshMarkers();
@@ -209,10 +246,12 @@
               const carto = Cesium.Cartographic.fromCartesian(pos);
               lngLat = { lng: Cesium.Math.toDegrees(carto.longitude), lat: Cesium.Math.toDegrees(carto.latitude) };
             }
+            pf3dHighlight(obj.id);
             if (typeof window.showPebaDetail === 'function') window.showPebaDetail(p, lngLat);
             return;
           }
         }
+        pf3dHighlight(null);
       }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
 
       const tooltipEl = document.getElementById('pf3d-tooltip');
@@ -249,6 +288,7 @@
 
   function refreshMarkers() {
     if (!viewer) return;
+    pf3dHighlight(null); // il filtro può cambiare/rimuovere l'entity evidenziato
     markerEntities.forEach((e) => viewer.entities.remove(e));
     markerEntities = [];
     propsByCodice.clear();

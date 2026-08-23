@@ -1,3 +1,31 @@
+// ── Mirino evidenziazione (angoli quadrati, come un reticolo di messa a
+// fuoco) — canvas condiviso da mappa 2D (icona simbolo) e vista 3D (billboard). ──
+function pfReticleCanvas(size = 64, color = '#fbbf24', lineWidth = 4) {
+  const canvas = document.createElement('canvas');
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext('2d');
+  const pad = size * 0.14;
+  const arm = size * 0.24;
+  ctx.strokeStyle = color;
+  ctx.lineWidth = lineWidth;
+  ctx.lineCap = 'butt';
+  [
+    [[pad, pad + arm], [pad, pad], [pad + arm, pad]], // alto-sinistra
+    [[size - pad - arm, pad], [size - pad, pad], [size - pad, pad + arm]], // alto-destra
+    [[size - pad, size - pad - arm], [size - pad, size - pad], [size - pad - arm, size - pad]], // basso-destra
+    [[pad + arm, size - pad], [pad, size - pad], [pad, size - pad - arm]], // basso-sinistra
+  ].forEach(([a, b, c]) => {
+    ctx.beginPath();
+    ctx.moveTo(a[0], a[1]);
+    ctx.lineTo(b[0], b[1]);
+    ctx.lineTo(c[0], c[1]);
+    ctx.stroke();
+  });
+  return canvas;
+}
+window.pfReticleCanvas = pfReticleCanvas;
+
 // ── Costanti ──────────────────────────────────────────────────────────────
 const CENTER = [13.35, 38.14692];
 const ZOOM = 11;
@@ -354,14 +382,21 @@ map.on('load', () => {
       filter: ['==', ['geometry-type'], 'Polygon'],
       paint: { 'line-color': '#fbbf24', 'line-width': 3 },
     });
+    // addImage vuole HTMLImageElement/ImageBitmap/ImageData, non un <canvas> grezzo
+    // (altrimenti lancia — RGBAImage si aspetta data.length===width*height*4 — e
+    // interrompe tutto il resto di questo callback, poligoni compresi).
+    if (!map.hasImage('peba-reticle')) {
+      const reticle = pfReticleCanvas();
+      map.addImage('peba-reticle', reticle.getContext('2d').getImageData(0, 0, reticle.width, reticle.height));
+    }
     map.addLayer({
-      id: 'peba-highlight-circle', type: 'circle', source: 'peba-highlight',
+      id: 'peba-highlight-circle', type: 'symbol', source: 'peba-highlight',
       filter: ['==', ['geometry-type'], 'Point'],
-      paint: {
-        'circle-radius': ['interpolate', ['linear'], ['zoom'], 11, 8, 16, 15],
-        'circle-color': 'transparent',
-        'circle-stroke-color': '#fbbf24',
-        'circle-stroke-width': 3,
+      layout: {
+        'icon-image': 'peba-reticle',
+        'icon-size': ['interpolate', ['linear'], ['zoom'], 11, 0.35, 16, 0.75],
+        'icon-allow-overlap': true,
+        'icon-ignore-placement': true,
       },
     });
 
