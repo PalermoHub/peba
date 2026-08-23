@@ -341,6 +341,30 @@ map.on('load', () => {
       },
     });
 
+    // ── Evidenziazione selezione — un solo feature (punto o poligono) alla
+    // volta, ridisegnato sopra tutto il resto ad ogni click (vedi pfHighlightFeature).
+    map.addSource('peba-highlight', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+    map.addLayer({
+      id: 'peba-highlight-fill', type: 'fill', source: 'peba-highlight',
+      filter: ['==', ['geometry-type'], 'Polygon'],
+      paint: { 'fill-color': '#ffffff', 'fill-opacity': 0.15 },
+    });
+    map.addLayer({
+      id: 'peba-highlight-outline', type: 'line', source: 'peba-highlight',
+      filter: ['==', ['geometry-type'], 'Polygon'],
+      paint: { 'line-color': '#fbbf24', 'line-width': 3 },
+    });
+    map.addLayer({
+      id: 'peba-highlight-circle', type: 'circle', source: 'peba-highlight',
+      filter: ['==', ['geometry-type'], 'Point'],
+      paint: {
+        'circle-radius': ['interpolate', ['linear'], ['zoom'], 11, 8, 16, 15],
+        'circle-color': 'transparent',
+        'circle-stroke-color': '#fbbf24',
+        'circle-stroke-width': 3,
+      },
+    });
+
     updateMapScale();
 
     // ── Poligoni edifici/aree verdi (incl. cimiteri) — stessi geojson già usati
@@ -408,6 +432,21 @@ map.on('load', () => {
             'line-opacity': lineOp,
           },
         }, 'peba-punti-circle');
+
+        // Click su edificio/area verde: stesso pannello dettaglio dei punti (le
+        // proprietà complete stanno solo in peba.geojson, pebaByCodice le recupera
+        // per Codice) + evidenziazione del poligono cliccato.
+        ['peba-edifici-fill', 'peba-aree-verdi-fill'].forEach((layerId) => {
+          map.on('click', layerId, (e) => {
+            const f = e.features[0];
+            if (!f) return;
+            pfHighlightFeature(f);
+            const full = pebaByCodice.get(f.properties.Codice);
+            if (full) showPebaDetail(full, e.lngLat);
+          });
+          map.on('mouseenter', layerId, () => { map.getCanvas().style.cursor = 'pointer'; });
+          map.on('mouseleave', layerId, () => { map.getCanvas().style.cursor = ''; });
+        });
 
         // Applica subito il filtro Gruppo/Livello/ricerca già attivo (i layer
         // sono arrivati dopo il primo pfRenderAll, altrimenti mostrerebbero
@@ -787,13 +826,28 @@ function showPebaDetail(p, lngLat) {
 }
 window.showPebaDetail = showPebaDetail;
 
+// Ridisegna il feature (punto o poligono) cliccato nella source 'peba-highlight'
+// (layer dedicati aggiunti in map.on('load'), sempre sopra tutto). null = clear.
+function pfHighlightFeature(feature) {
+  const src = map.getSource('peba-highlight');
+  if (src) src.setData({ type: 'FeatureCollection', features: feature ? [feature] : [] });
+}
+
 map.on('click', 'peba-punti-circle', (e) => {
   const f = e.features[0];
   if (!f) return;
+  pfHighlightFeature(f);
   showPebaDetail(f.properties, e.lngLat);
 });
 map.on('mouseenter', 'peba-punti-circle', () => { map.getCanvas().style.cursor = 'pointer'; });
 map.on('mouseleave', 'peba-punti-circle', () => { map.getCanvas().style.cursor = ''; });
+
+// Click fuori da punti/poligoni: pulisce l'evidenziazione.
+map.on('click', (e) => {
+  const layers = ['peba-punti-circle', 'peba-edifici-fill', 'peba-aree-verdi-fill'].filter((id) => map.getLayer(id));
+  if (!layers.length) return;
+  if (!map.queryRenderedFeatures(e.point, { layers }).length) pfHighlightFeature(null);
+});
 
 // ── Scala metrica ─────────────────────────────────────────────────────────
 function updateMapScale() {

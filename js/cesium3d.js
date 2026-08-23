@@ -351,9 +351,13 @@
     return [sx / ring.length, sy / ring.length];
   }
 
-  // Spinge il vertice oltre il perimetro dell'edificio (verso il marciapiede):
-  // campionare la quota esattamente sul vertice intercetta il tetto (il tileset
-  // fotorealistico è una mesh piena), non la strada sottostante.
+  // Sposta il vertice lungo la retta centroide-vertice di "metri" (positivo:
+  // oltre il perimetro, verso il marciapiede — campionare esattamente sul
+  // vertice intercetta il tetto, il tileset fotorealistico è una mesh piena;
+  // negativo: verso l'interno, per restare sicuri dentro la sagoma quando si
+  // vuole colpire il tetto senza rischiare di sconfinare su un edificio
+  // vicino). Clamp al 20% della distanza originale: non oltrepassa mai il
+  // centroide anche su poligoni piccoli o molto irregolari.
   function spingiFuori(vertex, centroid, metri) {
     const [vlng, vlat] = vertex;
     const [clng, clat] = centroid;
@@ -362,15 +366,26 @@
     const dxM = (vlng - clng) * mPerDegLng;
     const dyM = (vlat - clat) * mPerDegLat;
     const lenM = Math.hypot(dxM, dyM) || 1;
-    const nDxM = dxM + (dxM / lenM) * metri;
-    const nDyM = dyM + (dyM / lenM) * metri;
+    const nLenM = Math.max(lenM + metri, lenM * 0.2);
+    const nDxM = (dxM / lenM) * nLenM;
+    const nDyM = (dyM / lenM) * nLenM;
     return [clng + nDxM / mPerDegLng, clat + nDyM / mPerDegLat];
   }
 
-  function mediana(nums) {
-    const s = nums.slice().sort((a, b) => a - b);
-    const mid = Math.floor(s.length / 2);
-    return s.length % 2 ? s[mid] : (s[mid - 1] + s[mid]) / 2;
+  // Estremo (max o min) tra i campioni, ma scartando prima quelli troppo
+  // lontani dalla mediana: la mesh fotorealistica Google ha occasionali spike
+  // (glitch di ricostruzione, tipici vicino ad alberi/bordi) e un poligono
+  // largo/impreciso (footprint OSM) può avere un vertice che sconfina su un
+  // edificio vicino più alto — un singolo campione simile falserebbe max/min
+  // grezzo. SOGLIA_M tollera comunque la normale variazione di un tetto
+  // spiovente o a più livelli sullo stesso edificio.
+  function estremoRobusto(valori, direzione, sogliaM = 15) {
+    const sorted = valori.slice().sort((a, b) => a - b);
+    const mid = Math.floor(sorted.length / 2);
+    const mediana = sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+    const affidabili = valori.filter((v) => Math.abs(v - mediana) <= sogliaM);
+    const pool = affidabili.length ? affidabili : valori;
+    return direzione === 'max' ? Math.max(...pool) : Math.min(...pool);
   }
 
   let edificiRequestId = 0;
@@ -383,7 +398,7 @@
   // solo alla porzione occupata, non all'intero condominio/torre che la ospita).
   const quotaTettoByCodice = new Map();
 
-  // Campiona la quota-marciapiede (mediana di pochi punti spinti fuori dalla
+  // Campiona la quota-marciapiede (minimo di pochi punti spinti fuori dalla
   // sagoma, vedi spingiFuori) per gli edifici passati e la mette in cache.
   // Ritorna false se l'ultima richiesta refreshEdifici è stata superata da una
   // più recente (filtro cambiato nel frattempo) — chi chiama deve abortire.
@@ -412,15 +427,27 @@
     entries.forEach(({ codice }, i) => {
       const [start, end] = ranges[i];
       const valid = samples.slice(start, end).map((c) => c.height).filter((h) => Number.isFinite(h));
-      quotaTerrenoByCodice.set(codice, valid.length ? mediana(valid) : 0);
+      // Minimo (robusto), non mediana: simmetrico al max usato per il tetto.
+      // Su terreno in pendenza o edifici su terrazzamenti/muri di cinta (es. siti
+      // UNESCO), alcuni campioni spinti fuori dal perimetro intercettano una quota
+      // già rialzata (terrazza, muro) invece del suolo vero sotto l'edificio: la
+      // mediana "galleggiava" sopra la base reale. Il minimo garantisce che la base
+      // dell'estrusione scenda fino al punto più basso plausibile, inglobando
+      // l'edificio anche quando i dintorni sono più alti del suo punto di appoggio.
+      quotaTerrenoByCodice.set(codice, valid.length ? estremoRobusto(valid, 'min') : 0);
     });
     return true;
   }
 
-  // Campiona la quota del TETTO (mediante sampleHeightMostDetailed dritto sui
-  // vertici/centroide, senza spingerli fuori come in campionaQuote: qui il colpire
-  // il tetto è voluto, non un bug) e tiene il massimo tra i campioni — un tetto
-  // spiovente o a più livelli deve restare comunque tutto dentro il poligono.
+  // Campiona la quota del TETTO (mediante sampleHeightMostDetailed sui vertici
+  // spinti 3m verso l'interno, vedi spingiFuori con metri negativo, più il
+  // centroide) e tiene il massimo tra i campioni — un tetto spiovente o a più
+  // livelli deve restare comunque tutto dentro il poligono. Il rientro verso
+  // l'interno (invece di campionare esattamente sul vertice) evita di
+  // intercettare un edificio vicino o un muro quando il poligono (footprint
+  // OSM, spesso meno rifinito del vecchio edificato.pmtiles) sconfina di poco
+  // oltre la sagoma reale — altrimenti il massimo prende quel valore estraneo
+  // e l'estrusione risulta troppo alta.
   async function campionaTetti(entries, requestId) {
     if (!viewer.scene.sampleHeightSupported || !entries.length) return true;
     const MAX_VERTICI = 4;
@@ -433,7 +460,8 @@
       const start = samples.length;
       samples.push(Cesium.Cartographic.fromDegrees(centroid[0], centroid[1]));
       for (let vi = 0; vi < outer.length; vi += passo) {
-        samples.push(Cesium.Cartographic.fromDegrees(outer[vi][0], outer[vi][1]));
+        const [lng, lat] = spingiFuori(outer[vi], centroid, -3);
+        samples.push(Cesium.Cartographic.fromDegrees(lng, lat));
       }
       ranges.push([start, samples.length]);
     });
@@ -446,7 +474,7 @@
     entries.forEach(({ codice }, i) => {
       const [start, end] = ranges[i];
       const valid = samples.slice(start, end).map((c) => c.height).filter((h) => Number.isFinite(h));
-      if (valid.length) quotaTettoByCodice.set(codice, Math.max(...valid));
+      if (valid.length) quotaTettoByCodice.set(codice, estremoRobusto(valid, 'max'));
     });
     return true;
   }
@@ -477,8 +505,10 @@
 
   // Poligoni estrusi solo per gli edifici PEBA attualmente in vista (stesso
   // filtro/fonte dei marker): footprint reale da dati/peba_edifici.geojson
-  // (join offline punto PEBA -> edificato.pmtiles), non dal tileset
-  // fotorealistico che essendo mesh unica non è stilizzabile per edificio.
+  // (join offline punto PEBA -> OSM building=*, overpass-api.de; 3 edifici
+  // senza match OSM entro soglia usano ancora il footprint edificato.pmtiles
+  // come fallback, vedi properties.fonte), non dal tileset fotorealistico
+  // che essendo mesh unica non è stilizzabile per edificio.
   //
   // La base non usa HeightReference.CLAMP_TO_GROUND: quel clamp campiona la
   // quota esattamente sotto ogni vertice, che per un tetto pieno è la quota
@@ -531,7 +561,7 @@
         Cesium.Cartesian3.fromDegreesArray(ring.flatMap(([lng, lat]) => [lng, lat])),
       ));
       const altezza = feature.properties.altezza > 1 ? feature.properties.altezza : 8;
-      // La quota è un'unica mediana per tutto il footprint: su terreno in pendenza
+      // La quota è un unico minimo per tutto il footprint: su terreno in pendenza
       // (o con lo scarto tra mesh fotorealistica Google e campione Cesium) non
       // combacia esattamente col reale a ogni angolo. Margini generosi sotto/sopra
       // fanno sì che il poligono inglobi comunque l'edificio reale del tileset
@@ -547,11 +577,17 @@
         ? feature.properties.tetto
         : quotaTettoByCodice.get(p.Codice);
       const cima = Number.isFinite(cimaTetto) ? Math.max(cimaNominale, cimaTetto) : cimaNominale;
+      // Tetto max: il campione sulla mesh fotorealistica può intercettare un
+      // albero/oggetto vicino invece del vero tetto (più probabile ora coi
+      // footprint OSM, più larghi/meno rifiniti del vecchio edificato.pmtiles) —
+      // qualunque sia la causa, l'estrusione visibile non supera mai questa
+      // altezza dalla base, indipendentemente da quanto "cima" risulti gonfiata.
+      const ESTRUSIONE_MAX_M = 25;
       const entity = viewer.entities.add({
         polygon: {
           hierarchy: new Cesium.PolygonHierarchy(positions, holePolys),
           height: base,
-          extrudedHeight: cima + MARGINE_ALTO,
+          extrudedHeight: Math.min(cima + MARGINE_ALTO, base + ESTRUSIONE_MAX_M),
           material: Cesium.Color.fromCssColorString(colore).withAlpha(0.55),
           outline: true,
           outlineColor: Cesium.Color.fromCssColorString(colore),
