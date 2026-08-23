@@ -41,6 +41,26 @@
     areaEntities.forEach((e) => { if (e.polygon) e.polygon.show = on; });
   }
   window.pf3dIsActive = () => active;
+  // Vola verso un punto lng/lat mantenendo quota/heading/pitch correnti della
+  // camera — usato dalla nav avanti/indietro tra schede dello stesso Gruppo.
+  // Evidenzia (mirino) il marker del Codice indicato, o rimuove l'evidenziazione
+  // con codice null — usato dalla nav avanti/indietro tra schede dello stesso Gruppo.
+  window.pf3dHighlightByCodice = (codice) => {
+    if (!viewer) return;
+    const entity = codice != null
+      ? markerEntities.find((e) => e.properties?.codice?.getValue() === codice)
+      : null;
+    pf3dHighlight(entity || null);
+  };
+  window.pf3dFlyToLngLat = (lng, lat) => {
+    if (!viewer) return;
+    const carto = viewer.camera.positionCartographic;
+    viewer.camera.flyTo({
+      destination: Cesium.Cartesian3.fromDegrees(lng, lat, carto.height),
+      orientation: { heading: viewer.camera.heading, pitch: viewer.camera.pitch, roll: 0 },
+      duration: 1.2,
+    });
+  };
   window.pf3dSetPoligoniVisible = setPoligoniVisible3D;
   window.pf3dPoligoniVisible = () => poligoniVisible;
 

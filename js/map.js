@@ -776,24 +776,31 @@ function openFeaturePanel(title, lngLat, sections) {
 const hoverPopup = new maplibregl.Popup({
   closeButton: false, closeOnClick: false, offset: 10, className: 'peba-hover-popup',
 });
-map.on('mousemove', 'peba-punti-circle', (e) => {
-  const f = e.features[0];
-  if (!f) return;
-  const nome = esc(f.properties['Nome Immobile']) || esc(f.properties.Gruppo) || '(senza nome)';
-  const codice = esc(f.properties.Codice);
+function pfShowHoverPopup(p, lngLat) {
+  const nome = esc(p['Nome Immobile']) || esc(p.Gruppo) || '(senza nome)';
+  const codice = esc(p.Codice);
   const label = codice ? `${codice} – ${nome}` : nome;
-  const colGruppo = coloriGruppoAttivi()[f.properties.Gruppo] || '#999999';
-  const livello = f.properties['Livello accessibilita'];
+  const colGruppo = coloriGruppoAttivi()[p.Gruppo] || '#999999';
+  const livello = p['Livello accessibilita'];
   const colLivello = badgeColori(livello);
   const badgeHtml = livello
     ? `<span class="mp-badge" style="background:${colLivello.bg};color:${colLivello.text};border-color:${colLivello.border};">${esc(livello)}</span>`
     : '';
-  hoverPopup.setLngLat(e.lngLat).setHTML(`
+  hoverPopup.setLngLat(lngLat).setHTML(`
     <div class="mp-title"><span class="mp-dot" style="background:${colGruppo};"></span>${label}</div>
     ${badgeHtml}
   `).addTo(map);
+}
+map.on('mousemove', 'peba-punti-circle', (e) => {
+  const f = e.features[0];
+  if (!f) return;
+  pfShowHoverPopup(f.properties, e.lngLat);
 });
 map.on('mouseleave', 'peba-punti-circle', () => { hoverPopup.remove(); });
+// Chiude il tooltip aperto da pfShowHoverPopup (nav prev/next) se l'utente sposta
+// la mappa a mano — e.originalEvent è assente sul movestart innescato dal nostro
+// stesso map.flyTo, quindi non si autochiude subito dopo averlo aperto.
+map.on('movestart', (e) => { if (e.originalEvent) hoverPopup.remove(); });
 
 // Media punteggio della circoscrizione di p, calcolata sui punti già caricati per la ricerca (PF_FEATURES, filters.js)
 function mediaPunteggioCircoscrizione(circoscrizione) {
@@ -858,10 +865,78 @@ function showPebaDetail(p, lngLat) {
     iconEl.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${rpIconePerGruppo(p.Gruppo)}</svg>`;
   }
   updateSchedaUrl(p.Codice || null);
+  updateSchedaNav(p);
 
   openFeaturePanel(esc(p['Nome Immobile']) || esc(p.Gruppo) || '(senza nome)', lngLat, sections);
 }
 window.showPebaDetail = showPebaDetail;
+
+// ── Nav avanti/indietro tra le schede dello stesso Gruppo (pannello destro) ──
+// Ordina per Codice (es. "U_16", "AV_23": prefisso alfabetico + numero) invece
+// dell'ordine grezzo del GeoJSON, così la sequenza è stabile e leggibile.
+function pfCodiceCompare(a, b) {
+  const re = /\d+|\D+/g;
+  const pa = String(a || '').match(re) || [];
+  const pb = String(b || '').match(re) || [];
+  const len = Math.max(pa.length, pb.length);
+  for (let i = 0; i < len; i++) {
+    const x = pa[i] || '', y = pb[i] || '';
+    const nx = Number(x), ny = Number(y);
+    if (x !== '' && y !== '' && !isNaN(nx) && !isNaN(ny)) {
+      if (nx !== ny) return nx - ny;
+    } else if (x !== y) {
+      return x < y ? -1 : 1;
+    }
+  }
+  return 0;
+}
+function pfGroupSiblings(gruppo) {
+  if (typeof PF_FEATURES === 'undefined' || !gruppo) return [];
+  return PF_FEATURES
+    .filter(({ p }) => p.Gruppo === gruppo)
+    .sort((a, b) => pfCodiceCompare(a.p.Codice, b.p.Codice));
+}
+
+function updateSchedaNav(p) {
+  const nav = document.getElementById('rp-punto-nav');
+  const countEl = document.getElementById('rp-punto-nav-count');
+  if (!nav || !countEl) return;
+  const siblings = pfGroupSiblings(p.Gruppo);
+  const idx = siblings.findIndex((s) => s.p.Codice === p.Codice);
+  if (idx === -1 || siblings.length <= 1) {
+    nav.hidden = true;
+    nav.dataset.gruppo = '';
+    return;
+  }
+  nav.hidden = false;
+  nav.dataset.gruppo = p.Gruppo;
+  nav.dataset.idx = String(idx);
+  countEl.textContent = `${idx + 1} / ${siblings.length}`;
+}
+
+function pfNavigateScheda(delta) {
+  const nav = document.getElementById('rp-punto-nav');
+  const gruppo = nav?.dataset.gruppo;
+  if (!gruppo) return;
+  const siblings = pfGroupSiblings(gruppo);
+  const idx = Number(nav.dataset.idx);
+  if (!siblings.length || isNaN(idx)) return;
+  const next = siblings[(idx + delta + siblings.length) % siblings.length];
+  showPebaDetail(next.p, { lat: next.lat, lng: next.lng });
+  pfHighlightFeature({
+    type: 'Feature',
+    geometry: { type: 'Point', coordinates: [next.lng, next.lat] },
+    properties: next.p,
+  });
+  pfShowHoverPopup(next.p, [next.lng, next.lat]);
+  map.flyTo({ center: [next.lng, next.lat], zoom: Math.max(map.getZoom(), 16) });
+  if (typeof window.pf3dIsActive === 'function' && window.pf3dIsActive()) {
+    if (typeof window.pf3dFlyToLngLat === 'function') window.pf3dFlyToLngLat(next.lng, next.lat);
+    if (typeof window.pf3dHighlightByCodice === 'function') window.pf3dHighlightByCodice(next.p.Codice || null);
+  }
+}
+document.getElementById('rp-punto-prev')?.addEventListener('click', () => pfNavigateScheda(-1));
+document.getElementById('rp-punto-next')?.addEventListener('click', () => pfNavigateScheda(1));
 
 // Ridisegna il feature (punto o poligono) cliccato nella source 'peba-highlight'
 // (layer dedicati aggiunti in map.on('load'), sempre sopra tutto). null = clear.
