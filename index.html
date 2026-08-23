@@ -405,6 +405,8 @@
       <button class="ptab" data-tab="relazione">Relazione Generale</button>
       <button class="ptab" data-tab="indice-pdf">Indice dei PDF</button>
       <button class="ptab" data-tab="costi">Costi</button>
+      <button class="ptab" data-tab="priorita">Priorità</button>
+      <button class="ptab" data-tab="territorio">Territorio</button>
     </div>
     <button id="panel-back-top" title="Torna in cima" aria-label="Torna in cima">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -910,11 +912,8 @@
           scheda è mostrato anche nel pannello di dettaglio dell'immobile, quando disponibile.
         </p>
         <p class="panel-note panel-note-warn">
-          10 codici viabilità nel documento sorgente delle stime costi sono etichettati per errore
-          con prefisso <code>VU_</code> invece di <code>VC_</code> (VU_09→VC_09, VU_10→VC_10,
-          VU_17→VC_17, VU_18→VC_18, VU_25→VC_25, VU_26→VC_26, VU_33→VC_33, VU_34→VC_34,
-          VU_41→VC_41, VU_42→VC_42): corretti nei dati mostrati. La scheda <code>AV_01</code> non ha
-          una tabella costi nel documento sorgente (nessun intervento stimato).
+          La scheda <code>AV_01</code> non ha una tabella costi nel documento sorgente (nessun
+          intervento stimato).
         </p>
       </div>
       <div class="panel-section">
@@ -943,6 +942,68 @@
           <tfoot>
             <tr><td><strong>Totale complessivo</strong></td><td><strong>229</strong></td><td><strong>111.160.171,60 €</strong></td></tr>
           </tfoot>
+        </table>
+      </div>
+    </div>
+    <div class="tab-pane" data-tab="priorita">
+      <div class="panel-section">
+        <h3>Classe di priorità d'intervento</h3>
+        <p class="panel-note">
+          Ogni scheda valutabile combina la <strong>rilevanza</strong> (ALTA/BASSA, importanza strategica
+          del luogo) con il <strong>livello di accessibilità</strong> derivato dal punteggio del rilievo,
+          secondo la matrice ufficiale del piano: classe 4 = ALTA rilevanza + INACCESSIBILE (massima
+          urgenza) fino a classe 5 = BASSA rilevanza + ACCESSIBILE (minima urgenza). La classe è mostrata
+          anche nella scheda di dettaglio dell'immobile, insieme alla rilevanza, quando disponibile.
+        </p>
+        <p class="panel-note panel-note-warn">
+          3 schede non hanno un punteggio nel documento sorgente e non sono classificabili:
+          <code>AV_01</code>, <code>VC_16</code>, <code>VC_17</code>.
+        </p>
+      </div>
+      <div class="panel-section">
+        <h3>Riepilogo per classe di priorità</h3>
+        <table class="rp-table">
+          <thead><tr><th>Classe</th><th>Rilevanza</th><th>Livello accessibilità</th><th>N. schede</th></tr></thead>
+          <tbody>
+            <tr><td>4</td><td>ALTA</td><td>Inaccessibile</td><td>2</td></tr>
+            <tr><td>3</td><td>ALTA</td><td>Parzialmente inaccessibile</td><td>61</td></tr>
+            <tr><td>2</td><td>ALTA</td><td>Parzialmente accessibile</td><td>140</td></tr>
+            <tr><td>1</td><td>ALTA</td><td>Accessibile</td><td>21</td></tr>
+            <tr><td>8</td><td>BASSA</td><td>Inaccessibile</td><td>0</td></tr>
+            <tr><td>7</td><td>BASSA</td><td>Parzialmente inaccessibile</td><td>0</td></tr>
+            <tr><td>6</td><td>BASSA</td><td>Parzialmente accessibile</td><td>2</td></tr>
+            <tr><td>5</td><td>BASSA</td><td>Accessibile</td><td>1</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="tab-pane" data-tab="territorio">
+      <div class="panel-section">
+        <h3>Copertura territoriale</h3>
+        <p class="panel-note">
+          Numero di schede rilevate e costo stimato totale degli interventi per circoscrizione,
+          quartiere e Unità di Primo Livello (UPL), ordinati per numero di interventi.
+        </p>
+      </div>
+      <div class="panel-section">
+        <h3>Circoscrizioni</h3>
+        <table class="rp-table">
+          <thead><tr><th>Circoscrizione</th><th>N. interventi</th><th>Costo totale</th></tr></thead>
+          <tbody id="territorio-circoscrizione"></tbody>
+        </table>
+      </div>
+      <div class="panel-section">
+        <h3>Quartieri</h3>
+        <table class="rp-table">
+          <thead><tr><th>Quartiere</th><th>N. interventi</th><th>Costo totale</th></tr></thead>
+          <tbody id="territorio-quartiere"></tbody>
+        </table>
+      </div>
+      <div class="panel-section">
+        <h3>UPL</h3>
+        <table class="rp-table">
+          <thead><tr><th>UPL</th><th>N. interventi</th><th>Costo totale</th></tr></thead>
+          <tbody id="territorio-upl"></tbody>
         </table>
       </div>
     </div>

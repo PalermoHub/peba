@@ -80,6 +80,7 @@ fetch(DATA.codiceOggettoPdf).then((r) => r.json()).then((elenco) => {
 const CODICE_COSTO = new Map();
 fetch(DATA.costiPerScheda).then((r) => r.json()).then((obj) => {
   Object.entries(obj).forEach(([codice, costo]) => CODICE_COSTO.set(codice, costo));
+  window.tryBuildTerritorioTab && window.tryBuildTerritorioTab();
 }).catch(() => {});
 
 function fmtEuro(v) {
@@ -622,6 +623,20 @@ function badgeColoriGruppo(gruppo) {
   return { bg: `${col}22`, text: badgeTextColor(col), border: `${col}88` };
 }
 
+function badgeColoriRilevanza(rilevanza) {
+  const col = rilevanza === 'Alta' ? '#dc2626' : '#6b7280';
+  return { bg: `${col}22`, text: badgeTextColor(col), border: `${col}88` };
+}
+
+// Classe di priorità (matrice ufficiale del piano, dati/priorita_schede.md):
+// Rilevanza ALTA -> 4..1 (Inaccessibile..Accessibile), BASSA -> 8..5.
+function classePriorita(p) {
+  const livMap = { 'Inaccessibile': 4, 'Parzialmente inaccessibile': 3, 'Parzialmente accessibile': 2, 'Accessibile': 1 };
+  const liv = livMap[p['Livello accessibilita']];
+  if (!liv || (p.Rilevanza !== 'Alta' && p.Rilevanza !== 'Bassa')) return null;
+  return p.Rilevanza === 'Alta' ? liv : liv + 4;
+}
+
 // Barra orizzontale del punteggio (0-100), colorata come il badge livello
 function rpScoreBar(value, colorHex) {
   const wrap = document.createElement('div'); wrap.className = 'rp-score-bar';
@@ -843,6 +858,39 @@ map.on('mouseleave', 'peba-punti-circle', () => { hoverPopup.remove(); });
 // stesso map.flyTo, quindi non si autochiude subito dopo averlo aperto.
 map.on('movestart', (e) => { if (e.originalEvent) hoverPopup.remove(); });
 
+// Tab "Territorio": tabelle Circoscrizione/Quartiere/UPL ordinate per N. interventi,
+// con costo totale (CODICE_COSTO) di ogni raggruppamento. Chiamata da filters.js (PF_FEATURES
+// pronto) e da CODICE_COSTO fetch sopra: costruisce solo quando entrambi sono disponibili.
+function pfAggregaTerritorio(campo) {
+  const agg = new Map(); // valore -> { n, costo }
+  PF_FEATURES.forEach(({ p }) => {
+    const val = p[campo];
+    if (!val) return;
+    const cur = agg.get(val) || { n: 0, costo: 0 };
+    cur.n += 1;
+    cur.costo += CODICE_COSTO.get(p.Codice) || 0;
+    agg.set(val, cur);
+  });
+  return [...agg.entries()]
+    .map(([valore, { n, costo }]) => ({ valore, n, costo }))
+    .sort((a, b) => b.n - a.n || b.costo - a.costo);
+}
+
+function pfRenderTabellaTerritorio(tbodyId, righe) {
+  const tbody = document.getElementById(tbodyId);
+  if (!tbody) return;
+  tbody.innerHTML = righe.map((r) => (
+    `<tr><td>${esc(r.valore)}</td><td>${r.n}</td><td>${fmtEuro(r.costo)}</td></tr>`
+  )).join('');
+}
+
+window.tryBuildTerritorioTab = function tryBuildTerritorioTab() {
+  if (typeof PF_FEATURES === 'undefined' || !PF_FEATURES.length || !CODICE_COSTO.size) return;
+  pfRenderTabellaTerritorio('territorio-circoscrizione', pfAggregaTerritorio('Circoscrizione'));
+  pfRenderTabellaTerritorio('territorio-quartiere', pfAggregaTerritorio('Quartiere'));
+  pfRenderTabellaTerritorio('territorio-upl', pfAggregaTerritorio('UPL'));
+};
+
 // Media punteggio della circoscrizione di p, calcolata sui punti già caricati per la ricerca (PF_FEATURES, filters.js)
 function mediaPunteggioCircoscrizione(circoscrizione) {
   if (!circoscrizione || typeof PF_FEATURES === 'undefined' || !PF_FEATURES.length) return null;
@@ -879,7 +927,9 @@ function showPebaDetail(p, lngLat) {
     const col = COLORI_ACCESSIBILITA[p['Livello accessibilita']] || COLORI_ACCESSIBILITA['Non valutabile'];
     accessibilita.appendChild(rpScoreBar(p.Punteggio, badgeTextColor(col)));
   }
-  if (p.Rilevanza) accessibilita.appendChild(rpRow('Rilevanza', esc(p.Rilevanza)));
+  if (p.Rilevanza) accessibilita.appendChild(rpBadgeRow('Rilevanza', esc(p.Rilevanza), badgeColoriRilevanza(p.Rilevanza)));
+  const classe = classePriorita(p);
+  if (classe != null) accessibilita.appendChild(rpBadgeRow('Classe priorità', `Classe ${classe}`, badgeColori(p['Livello accessibilita'])));
   if (p['Non valutabile'] === 'Si') {
     accessibilita.appendChild(rpBadgeRow('Dato', 'Non valutabile', { bg: '#99999922', text: '#666', border: '#99999988' }));
   }

@@ -294,6 +294,7 @@ fetch(DATA.peba).then((r) => r.json()).then((geo) => {
     lng: f.geometry.coordinates[0],
     lat: f.geometry.coordinates[1],
   }));
+  window.tryBuildTerritorioTab && window.tryBuildTerritorioTab();
 
   pfBuildChipset(document.getElementById('pf-gruppo-set'),  'gruppo',  'Gruppo', GRUPPO_ORDER, coloriGruppoAttivi());
   pfBuildChipset(document.getElementById('pf-livello-set'), 'livello', 'Livello accessibilita', LIVELLO_ORDER, COLORI_ACCESSIBILITA);
