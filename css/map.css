@@ -47,7 +47,8 @@ body {
 #map-toolbar-wrap {
   position: absolute;
   left: 0;
-  top: 35px;
+  top: 50%;
+  transform: translateY(-50%);
   z-index: var(--z-toolbar);
   display: flex;
   flex-direction: row;
@@ -1090,6 +1091,17 @@ body:has(#rp-wrap.open) #map-scale {
 
 body:has(#rp-wrap.open) #ods-logo {
   right: 406px;
+}
+
+@media (max-width: 640px) {
+  /* Logo più piccolo e più in alto: non si sovrappone alla barra di ricerca (bottom: 34px) */
+  #ods-logo {
+    bottom: 90px;
+    right: 12px;
+  }
+  #ods-logo img {
+    height: 34px;
+  }
 }
 
 /* ════════════════════════════════════════
@@ -2203,6 +2215,8 @@ body:has(#rp-wrap.open) #info-panel {
   #info-panel {
     width: 100%;
     left: 0 !important;
+    height: 100vh;
+    height: 100dvh;
     transform: translateY(calc(100% - 20px));
   }
   #info-panel.open {
