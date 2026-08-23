@@ -685,6 +685,7 @@ function rpGalleriaFoto(codice, nFoto) {
   const closeBtn = document.getElementById('photo-modal-close');
   const rotateLeftBtn = document.getElementById('photo-modal-rotate-left');
   const rotateRightBtn = document.getElementById('photo-modal-rotate-right');
+  const saveBtn = document.getElementById('photo-modal-save');
   let srcs = [];
   let idx = 0;
   let rotations = [];
@@ -703,6 +704,7 @@ function rpGalleriaFoto(codice, nFoto) {
     imgEl.src = src;
     applyRotation();
     counterEl.textContent = `${idx + 1} / ${srcs.length}`;
+    if (saveBtn) { saveBtn.href = src; saveBtn.download = src.split('/').pop(); }
     thumbsEl.querySelectorAll('.photo-modal-thumb').forEach((t, i) => {
       t.classList.toggle('active', i === idx);
     });
