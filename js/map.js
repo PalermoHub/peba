@@ -673,6 +673,23 @@ function rpGalleriaFoto(codice, nFoto) {
   return s;
 }
 
+function rpNotaQualitaDati() {
+  const wrap = document.createElement('div');
+  wrap.className = 'panel-section';
+  wrap.innerHTML = `
+    <details class="panel-note-warn-details">
+      <summary>Nota sulla qualità dei dati</summary>
+      <p class="panel-note panel-note-warn">
+        Schede, testi e foto sono stati estratti in automatico dai PDF originali del
+        rilievo con script Python (PyMuPDF) e assistenza di Claude (Anthropic), tramite
+        riconoscimento di pattern testuali e non lettura semantica; le coordinate sono state
+        ricavate per geocodifica degli indirizzi. Possono quindi essere presenti errori,
+        campi mancanti o posizionamenti imprecisi sulla mappa.
+      </p>
+    </details>`;
+  return wrap;
+}
+
 // ── Modale galleria foto (avanti/indietro, esc, click fuori) ─────────────
 (function initPhotoModal() {
   const modal = document.getElementById('photo-modal');
@@ -872,6 +889,8 @@ function showPebaDetail(p, lngLat) {
 
   const foto = rpGalleriaFoto(p.Codice, p['N. foto rilievo']);
   if (foto) sections.push(foto);
+
+  sections.push(rpNotaQualitaDati());
 
   const iconEl = document.getElementById('rp-punto-icon');
   if (iconEl) {

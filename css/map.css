@@ -1574,6 +1574,7 @@ body:has(#rp-wrap.open) #info-panel {
 #rp-punto-body {
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 0;
   scrollbar-width: thin;
   scrollbar-color: #c0cce8 transparent;
@@ -1620,8 +1621,8 @@ body:has(#rp-wrap.open) #info-panel {
   font-size: 11px;
 }
 .rp-punto-row:last-child { margin-bottom: 0; }
-.rp-punto-row-label { color: #1f2937; flex: 1; }
-.rp-punto-row-value { color: #1a2a50; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.rp-punto-row-label { color: #1f2937; flex: 1; min-width: 0; }
+.rp-punto-row-value { color: #1a2a50; font-weight: 600; font-variant-numeric: tabular-nums; text-align: right; overflow-wrap: anywhere; }
 
 /* Barra punteggio (0-100) */
 .rp-score-bar { margin: 2px 0 6px; }
