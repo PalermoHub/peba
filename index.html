@@ -265,6 +265,17 @@
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
     </button>
 
+    <div id="rp-nav">
+      <button class="rp-tab active" data-view="scheda">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        Scheda
+      </button>
+      <button class="rp-tab" data-view="stats">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        Statistiche
+      </button>
+    </div>
+
     <!-- Vista iniziale: introduzione, mostrata finché non si clicca un punto -->
     <div id="rp-gallery" class="rp-view">
       <div class="rp-panel-header">
@@ -382,6 +393,68 @@
         <!-- contenuto renderizzato via map.js -->
       </div>
     </div><!-- /rp-punto -->
+
+    <!-- Vista: statistiche e classifiche sul territorio -->
+    <div id="rp-stats" class="rp-view" style="display:none;">
+      <div class="rp-panel-header">
+        <div class="rp-panel-title">Statistiche e classifiche</div>
+        <div class="rp-panel-sub">Interventi sul territorio</div>
+      </div>
+      <div class="panel-section rp-scroll">
+        <p class="panel-note">
+          Interventi sul territorio per numero e costo stimato. Clicca un nome di
+          Circoscrizione, Quartiere o UPL per filtrare la mappa: i filtri sono
+          interconnessi e a scala, clicca di nuovo per rimuoverlo.
+        </p>
+        <div class="stat-cards">
+          <div class="stat-card">
+            <div class="stat-card-value" id="stat-tot-interventi">–</div>
+            <div class="stat-card-label">Interventi</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card-value" id="stat-tot-costo">–</div>
+            <div class="stat-card-label">Costo stimato totale</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card-value" id="stat-media-costo">–</div>
+            <div class="stat-card-label">Costo medio / intervento</div>
+          </div>
+        </div>
+        <h3>Circoscrizioni</h3>
+        <div class="srank-cols">
+          <div class="srank-col">
+            <div class="srank-col-title">Per numero interventi</div>
+            <div class="srank-list" id="stat-rank-circ-n"></div>
+          </div>
+          <div class="srank-col">
+            <div class="srank-col-title">Per costo stimato</div>
+            <div class="srank-list" id="stat-rank-circ-costo"></div>
+          </div>
+        </div>
+        <h3>Quartieri</h3>
+        <div class="srank-cols">
+          <div class="srank-col">
+            <div class="srank-col-title">Per numero interventi</div>
+            <div class="srank-list" id="stat-rank-quart-n"></div>
+          </div>
+          <div class="srank-col">
+            <div class="srank-col-title">Per costo stimato</div>
+            <div class="srank-list" id="stat-rank-quart-costo"></div>
+          </div>
+        </div>
+        <h3>UPL</h3>
+        <div class="srank-cols">
+          <div class="srank-col">
+            <div class="srank-col-title">Per numero interventi</div>
+            <div class="srank-list" id="stat-rank-upl-n"></div>
+          </div>
+          <div class="srank-col">
+            <div class="srank-col-title">Per costo stimato</div>
+            <div class="srank-list" id="stat-rank-upl-costo"></div>
+          </div>
+        </div>
+      </div>
+    </div><!-- /rp-stats -->
 
   </div>
 </div>

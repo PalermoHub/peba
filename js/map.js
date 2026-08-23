@@ -810,8 +810,7 @@ function openFeaturePanel(title, lngLat, sections) {
   document.getElementById('rp-punto-coords').textContent = lngLat
     ? `${lngLat.lat.toFixed(4)}° N  ${lngLat.lng.toFixed(4)}° E` : '';
 
-  document.getElementById('rp-gallery').style.display = 'none';
-  document.getElementById('rp-punto').style.display = '';
+  if (typeof window.rpShowScheda === 'function') window.rpShowScheda('punto');
   if (typeof window.openRightPanel === 'function') window.openRightPanel();
 }
 
@@ -889,6 +888,73 @@ window.tryBuildTerritorioTab = function tryBuildTerritorioTab() {
   pfRenderTabellaTerritorio('territorio-circoscrizione', pfAggregaTerritorio('Circoscrizione'));
   pfRenderTabellaTerritorio('territorio-quartiere', pfAggregaTerritorio('Quartiere'));
   pfRenderTabellaTerritorio('territorio-upl', pfAggregaTerritorio('UPL'));
+  window.pfBuildStatisticheTab();
+};
+
+// Tab "Statistiche e Classifiche": stessa aggregazione del tab Territorio, ma
+// cascading come i select dei filtri (pfPasses esclude solo la dimensione
+// stessa) cosi' le classifiche riflettono gli altri filtri gia' attivi, e i
+// nomi cliccati impostano pfState[dimKey] riusando il filtro mappa esistente.
+function pfAggregaCascade(dimKey, propKey) {
+  const agg = new Map();
+  PF_FEATURES.forEach(({ p }) => {
+    if (!pfPasses(p, [dimKey])) return;
+    const val = p[propKey];
+    if (!val) return;
+    const cur = agg.get(val) || { n: 0, costo: 0 };
+    cur.n += 1;
+    cur.costo += CODICE_COSTO.get(p.Codice) || 0;
+    agg.set(val, cur);
+  });
+  return [...agg.entries()].map(([valore, { n, costo }]) => ({ valore, n, costo }));
+}
+
+function pfRenderRanking(containerId, righe, dimKey, sortKey) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  const total = righe.reduce((s, r) => s + r[sortKey], 0);
+  const rows = [...righe].sort((a, b) => b[sortKey] - a[sortKey]).slice(0, 5);
+  const fillClass = sortKey === 'costo' ? 'srank-bar-fill srank-bar-fill--costo' : 'srank-bar-fill srank-bar-fill--n';
+  el.innerHTML = rows.map((r) => {
+    const pct = total ? Math.round((r[sortKey] / total) * 100) : 0;
+    const active = pfState[dimKey] === r.valore;
+    const val = sortKey === 'costo' ? fmtEuro(r.costo) : r.n.toLocaleString('it-IT');
+    return `
+      <button type="button" class="srank-item${active ? ' active' : ''}" data-dim="${dimKey}" data-value="${esc(r.valore)}" title="${esc(r.valore)}">
+        <span class="srank-label">${esc(r.valore)}</span>
+        <span class="srank-bar-track"><span class="${fillClass}" style="width:${pct}%"></span></span>
+        <span class="srank-value">${val} <span class="srank-pct">(${pct}%)</span></span>
+      </button>`;
+  }).join('');
+  el.querySelectorAll('.srank-item').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const d = btn.dataset.dim, v = btn.dataset.value;
+      pfState[d] = pfState[d] === v ? '' : v;
+      pfRenderAll();
+      pfZoomToMatched();
+    });
+  });
+}
+
+window.pfBuildStatisticheTab = function pfBuildStatisticheTab() {
+  if (typeof PF_FEATURES === 'undefined' || !PF_FEATURES.length || !CODICE_COSTO.size) return;
+  const matched = PF_FEATURES.filter(({ p }) => pfMatchesAll(p));
+  const totN = matched.length;
+  const totCosto = matched.reduce((s, { p }) => s + (CODICE_COSTO.get(p.Codice) || 0), 0);
+  const setTxt = (id, txt) => { const e = document.getElementById(id); if (e) e.textContent = txt; };
+  setTxt('stat-tot-interventi', totN.toLocaleString('it-IT'));
+  setTxt('stat-tot-costo', fmtEuro(totCosto));
+  setTxt('stat-media-costo', fmtEuro(totN ? totCosto / totN : 0));
+
+  [
+    ['circ', 'Circoscrizione', 'stat-rank-circ-n', 'stat-rank-circ-costo'],
+    ['quart', 'Quartiere', 'stat-rank-quart-n', 'stat-rank-quart-costo'],
+    ['upl', 'UPL', 'stat-rank-upl-n', 'stat-rank-upl-costo'],
+  ].forEach(([dimKey, propKey, idN, idCosto]) => {
+    const righe = pfAggregaCascade(dimKey, propKey);
+    pfRenderRanking(idN, righe, dimKey, 'n');
+    pfRenderRanking(idCosto, righe, dimKey, 'costo');
+  });
 };
 
 // Media punteggio della circoscrizione di p, calcolata sui punti già caricati per la ricerca (PF_FEATURES, filters.js)

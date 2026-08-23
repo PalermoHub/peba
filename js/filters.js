@@ -242,6 +242,7 @@ function pfRenderAll() {
   pfUpdateLegend();
   pfUpdateChips();
   pfApplyMapFilter();
+  if (typeof window.pfBuildStatisticheTab === 'function') window.pfBuildStatisticheTab();
 }
 
 function pfResetAll() {
