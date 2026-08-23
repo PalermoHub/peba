@@ -90,10 +90,11 @@ NIDO GIRASOLE: 5 corpi disposti a croce). In questo caso:
 
 In `js/cesium3d.js`, `refreshEdifici`, `ESTRUSIONE_MAX_M` è il tetto
 massimo di estrusione sopra la base (in metri). Di norma è 25 m; per
-`Gruppo === 'Asilo'` è ridotto a 10 m, perché il campo `altezza` di
-quei punti (dal rilievo PEBA) a volte eredita per errore la quota di
-un edificio vicino più alto e senza cap l'estrusione 3D risultava
-sproporzionata rispetto a un asilo reale.
+`Gruppo === 'Asilo'` è ridotto a 6 m, perché gli asili sono
+generalmente edifici a un solo livello fuori terra e il campo
+`altezza` di quei punti (dal rilievo PEBA) a volte eredita per errore
+la quota di un edificio vicino più alto — senza cap l'estrusione 3D
+risultava sproporzionata rispetto a un asilo reale.
 
 ## Scansione batch: trovare edifici con corpi mancanti
 

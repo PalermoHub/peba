@@ -629,9 +629,10 @@
       // footprint OSM, più larghi/meno rifiniti del vecchio edificato.pmtiles) —
       // qualunque sia la causa, l'estrusione visibile non supera mai questa
       // altezza dalla base, indipendentemente da quanto "cima" risulti gonfiata.
-      // Gruppo Asilo: tetto a bassa quota per costruzione, cap più stretto per
-      // non farlo gonfiare col campionamento tetto di un edificio vicino più alto.
-      const ESTRUSIONE_MAX_M = p.Gruppo === 'Asilo' ? 10 : 25;
+      // Gruppo Asilo: edifici generalmente a un livello fuori terra, cap più
+      // stretto per non farli gonfiare col campionamento tetto di un edificio
+      // vicino più alto.
+      const ESTRUSIONE_MAX_M = p.Gruppo === 'Asilo' ? 6 : 25;
       polys.forEach(([outer, ...holes]) => {
         const positions = Cesium.Cartesian3.fromDegreesArray(outer.flatMap(([lng, lat]) => [lng, lat]));
         const holePolys = holes.map((ring) => new Cesium.PolygonHierarchy(
