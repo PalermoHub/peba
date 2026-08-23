@@ -955,6 +955,9 @@ window.pfBuildStatisticheTab = function pfBuildStatisticheTab() {
     pfRenderRanking(idN, righe, dimKey, 'n');
     pfRenderRanking(idCosto, righe, dimKey, 'costo');
   });
+
+  const notaWrap = document.getElementById('stat-nota-qualita');
+  if (notaWrap && !notaWrap.hasChildNodes()) notaWrap.appendChild(rpNotaQualitaDati());
 };
 
 // Media punteggio della circoscrizione di p, calcolata sui punti già caricati per la ricerca (PF_FEATURES, filters.js)
