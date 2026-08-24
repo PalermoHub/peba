@@ -11,6 +11,8 @@ const pfState = {
   circ: '', quart: '', upl: '',
   gruppo: new Set(),
   livello: new Set(),
+  rilevanza: new Set(),
+  classe: new Set(),
   q: '',
 };
 
@@ -23,6 +25,17 @@ const LIVELLO_ORDER = [
   'Accessibile', 'Parzialmente accessibile', 'Parzialmente inaccessibile',
   'Inaccessibile', 'Non valutabile',
 ];
+const RILEVANZA_ORDER = ['Alta', 'Bassa'];
+const RILEVANZA_COLORS = { 'Alta': '#dc2626', 'Bassa': '#6b7280' };
+
+// Classe priorità: ordinate per urgenza decrescente (vedi classePriorita in map.js)
+const CLASSE_ORDER = ['4', '3', '2', '1', '8', '7', '6', '5'];
+const CLASSE_LIVELLO = {
+  '4': 'Inaccessibile', '3': 'Parzialmente inaccessibile', '2': 'Parzialmente accessibile', '1': 'Accessibile',
+  '8': 'Inaccessibile', '7': 'Parzialmente inaccessibile', '6': 'Parzialmente accessibile', '5': 'Accessibile',
+};
+const CLASSE_LABELS = Object.fromEntries(CLASSE_ORDER.map((c) => [c, `Classe ${c}`]));
+const CLASSE_COLORS = Object.fromEntries(CLASSE_ORDER.map((c) => [c, COLORI_ACCESSIBILITA[CLASSE_LIVELLO[c]]]));
 
 // ── Match per dimensione, esclude eventualmente una o più dimensioni ─────
 function pfPasses(p, except) {
@@ -32,6 +45,8 @@ function pfPasses(p, except) {
   if (!skip('upl')   && pfState.upl   && p.UPL            !== pfState.upl)   return false;
   if (!skip('gruppo')  && pfState.gruppo.size  && !pfState.gruppo.has(p.Gruppo)) return false;
   if (!skip('livello') && pfState.livello.size && !pfState.livello.has(p['Livello accessibilita'])) return false;
+  if (!skip('rilevanza') && pfState.rilevanza.size && !pfState.rilevanza.has(p.Rilevanza)) return false;
+  if (!skip('classe') && pfState.classe.size && !pfState.classe.has(p._classePriorita)) return false;
   if (!skip('q') && pfState.q) {
     const hay = `${p['Nome Immobile'] || ''} ${p.Indirizzo || ''} ${p.Codice || ''}`.toLowerCase();
     if (!hay.includes(pfState.q)) return false;
@@ -61,12 +76,12 @@ function pfPopulateSelect(selectEl, dimKey, propKey, allLabel) {
   }
 }
 
-// ── Chipset (Gruppo / Livello): checkbox multiple con conteggio live ─────
-function pfBuildChipset(container, dimKey, propKey, order, colorMap) {
+// ── Chipset (Gruppo / Livello / Rilevanza / Classe): checkbox multiple con conteggio live ─
+function pfBuildChipset(container, dimKey, propKey, order, colorMap, labelMap) {
   container.innerHTML = order.map((v) => `
     <button type="button" class="pf-chip-opt" data-dim="${dimKey}" data-value="${esc(v)}">
       <span class="pf-chip-dot" style="background:${(colorMap && colorMap[v]) || '#999'}"></span>
-      <span class="pf-chip-lbl">${esc(v)}</span>
+      <span class="pf-chip-lbl">${esc((labelMap && labelMap[v]) || v)}</span>
       <span class="pf-chip-cnt"></span>
     </button>
   `).join('');
@@ -183,6 +198,8 @@ function pfUpdateChips() {
   if (pfState.upl)   active.push({ label: pfState.upl,   clear: () => { pfState.upl = ''; } });
   pfState.gruppo.forEach((v)  => active.push({ label: v, clear: () => pfState.gruppo.delete(v) }));
   pfState.livello.forEach((v) => active.push({ label: v, clear: () => pfState.livello.delete(v) }));
+  pfState.rilevanza.forEach((v) => active.push({ label: `Rilevanza ${v}`, clear: () => pfState.rilevanza.delete(v) }));
+  pfState.classe.forEach((v)    => active.push({ label: CLASSE_LABELS[v] || v, clear: () => pfState.classe.delete(v) }));
   if (pfState.q) active.push({ label: `“${pfState.q}”`, clear: () => { pfState.q = ''; document.getElementById('pf-search-input').value = ''; } });
 
   badge.style.display = active.length ? 'flex' : 'none';
@@ -239,6 +256,8 @@ function pfRenderAll() {
   pfPopulateSelect(document.getElementById('pf-upl'),   'upl',   'UPL',            '— Tutte —');
   pfUpdateChipset(document.getElementById('pf-gruppo-set'),  'gruppo',  'Gruppo');
   pfUpdateChipset(document.getElementById('pf-livello-set'), 'livello', 'Livello accessibilita');
+  pfUpdateChipset(document.getElementById('pf-rilevanza-set'), 'rilevanza', 'Rilevanza');
+  pfUpdateChipset(document.getElementById('pf-classe-set'), 'classe', '_classePriorita');
   pfUpdateLegend();
   pfUpdateChips();
   pfApplyMapFilter();
@@ -248,6 +267,7 @@ function pfRenderAll() {
 function pfResetAll() {
   pfState.circ = ''; pfState.quart = ''; pfState.upl = '';
   pfState.gruppo.clear(); pfState.livello.clear();
+  pfState.rilevanza.clear(); pfState.classe.clear();
   pfState.q = '';
   const si = document.getElementById('pf-search-input');
   if (si) si.value = '';
@@ -290,15 +310,18 @@ function pfRenderSuggestions(query) {
 
 // ── Init ───────────────────────────────────────────────────────────────
 fetch(DATA.peba).then((r) => r.json()).then((geo) => {
-  PF_FEATURES = geo.features.map((f) => ({
-    p: f.properties,
-    lng: f.geometry.coordinates[0],
-    lat: f.geometry.coordinates[1],
-  }));
+  PF_FEATURES = geo.features.map((f) => {
+    const p = f.properties;
+    const classe = classePriorita(p);
+    p._classePriorita = classe != null ? String(classe) : null;
+    return { p, lng: f.geometry.coordinates[0], lat: f.geometry.coordinates[1] };
+  });
   window.tryBuildTerritorioTab && window.tryBuildTerritorioTab();
 
   pfBuildChipset(document.getElementById('pf-gruppo-set'),  'gruppo',  'Gruppo', GRUPPO_ORDER, coloriGruppoAttivi());
   pfBuildChipset(document.getElementById('pf-livello-set'), 'livello', 'Livello accessibilita', LIVELLO_ORDER, COLORI_ACCESSIBILITA);
+  pfBuildChipset(document.getElementById('pf-rilevanza-set'), 'rilevanza', 'Rilevanza', RILEVANZA_ORDER, RILEVANZA_COLORS);
+  pfBuildChipset(document.getElementById('pf-classe-set'), 'classe', '_classePriorita', CLASSE_ORDER, CLASSE_COLORS, CLASSE_LABELS);
   pfBuildLegend('livello');
 
   const start = () => { pfRenderAll(); };
