@@ -117,11 +117,10 @@
 #pf-filter-btn:hover { filter: brightness(1.1); }
 #pf-filter-btn.active { background: var(--c-brand-orange); }
 #pf-filter-badge {
-  position: absolute; top: -3px; right: -3px;
   background: var(--c-brand-orange); color: var(--c-white); border-radius: 50%;
-  width: 15px; height: 15px; font-size: 9px; font-weight: 700;
+  min-width: 15px; height: 15px; padding: 0 3px; font-size: 9px; font-weight: 700;
   display: flex; align-items: center; justify-content: center;
-  border: 2px solid var(--c-white); pointer-events: none;
+  pointer-events: none;
 }
 
 #pf-search-dd {
@@ -145,41 +144,20 @@
 }
 .pf-dd-empty { padding: 16px 14px; color: #8898c8; font-size: 12px; text-align: center; }
 
-/* ── Modale filtri ── */
-#pf-overlay {
-  display: none; position: fixed; inset: 0;
-  background: rgba(10, 20, 60, 0.38); z-index: var(--z-modal);
-}
-#pf-overlay.open { display: block; }
-#pf-modal {
-  display: none; position: fixed; top: 50%; left: 50%;
-  transform: translate(-50%, -50%);
-  background: var(--c-white); border: 1px solid rgba(30, 60, 160, 0.14);
-  border-radius: 14px; box-shadow: 4px 4px 30px rgba(30, 60, 160, 0.25);
-  z-index: calc(var(--z-modal) + 1); width: 320px; max-width: 94vw;
-  max-height: 88vh; overflow-y: auto; font-family: 'Titillium Web', sans-serif;
-}
-#pf-modal.open { display: block; }
-
-.pfm-header {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 14px 16px; border-bottom: 1px solid rgba(30, 60, 160, 0.1);
-}
-.pfm-header h3 { font-size: 13px; font-weight: 700; color: #2a3a68; }
-#pf-modal-close { background: none; border: none; cursor: pointer; color: #8898c8; font-size: 13px; padding: 4px; }
-#pf-modal-close:hover { color: #2a3a68; }
-
-.pfm-group { padding: 12px 16px; border-bottom: 1px solid rgba(30, 60, 160, 0.08); }
+/* ── Tab filtri (pannello destro) ── */
+.pfm-group { padding: 9px 16px; border-bottom: 1px solid rgba(30, 60, 160, 0.08); }
 .pfm-group label {
-  display: block; font-size: 10px; font-weight: 700; text-transform: uppercase;
-  letter-spacing: .06em; color: #8898c8; margin-bottom: 7px;
+  display: block; font-size: 9.5px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .06em; color: #8898c8; margin-bottom: 4px;
 }
 .pfm-group select {
-  width: 100%; padding: 7px 9px; background: #f4f6fb;
+  width: 100%; padding: 6px 9px; background: #f4f6fb;
   border: 1px solid rgba(30, 60, 160, 0.15); border-radius: 7px;
-  color: #2a3a68; font-size: 12.5px; outline: none; font-family: inherit;
+  color: #2a3a68; font-size: 12px; outline: none; font-family: inherit;
 }
 .pfm-group select:focus { border-color: var(--c-brand-blue); }
+
+.pfm-geo { display: flex; flex-direction: column; gap: 8px; }
 
 .pfm-chipset { display: flex; flex-wrap: wrap; gap: 5px; }
 .pf-chip-opt {
@@ -259,17 +237,6 @@
 [data-theme="dark"] .pf-dd-item:hover { background: rgba(70, 110, 220, 0.1); }
 [data-theme="dark"] .pf-dd-badge { background: rgba(70,110,220,0.15); color: #8898c8; }
 [data-theme="dark"] .pf-dd-empty { color: #7d89b5; }
-
-[data-theme="dark"] #pf-overlay { background: rgba(0, 0, 10, 0.55); }
-[data-theme="dark"] #pf-modal {
-  background: #111d38;
-  border-color: rgba(70, 110, 220, 0.22);
-  box-shadow: 4px 4px 30px rgba(0, 0, 20, 0.55);
-}
-[data-theme="dark"] .pfm-header { border-bottom-color: rgba(70, 110, 220, 0.15); }
-[data-theme="dark"] .pfm-header h3 { color: #c0cce8; }
-[data-theme="dark"] #pf-modal-close { color: #7d89b5; }
-[data-theme="dark"] #pf-modal-close:hover { color: #c0cce8; }
 
 [data-theme="dark"] .pfm-group { border-bottom-color: rgba(70, 110, 220, 0.1); }
 [data-theme="dark"] .pfm-group label { color: #7d89b5; }

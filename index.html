@@ -206,60 +206,11 @@
       <svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14">
         <path d="M10 18h4v-2h-4v2zM3 6v2h18V6H3zm3 7h12v-2H6v2z"/>
       </svg>
-      <span id="pf-filter-badge" style="display:none"></span>
     </button>
     <div id="pf-search-dd"></div>
   </div>
 </div>
 
-<!-- ═══ MODALE FILTRI ═══ -->
-<div id="pf-overlay"></div>
-<div id="pf-modal">
-  <div class="pfm-header">
-    <h3>Filtri</h3>
-    <button id="pf-modal-close" title="Chiudi" aria-label="Chiudi filtri">&#x2715;</button>
-  </div>
-
-  <div class="pfm-group">
-    <label>Circoscrizione</label>
-    <select id="pf-circ"><option value="">— Tutte —</option></select>
-  </div>
-  <div class="pfm-group">
-    <label>Quartiere</label>
-    <select id="pf-quart"><option value="">— Tutti —</option></select>
-  </div>
-  <div class="pfm-group">
-    <label>UPL · Unità di Primo Livello</label>
-    <select id="pf-upl"><option value="">— Tutte —</option></select>
-  </div>
-
-  <div class="pfm-group">
-    <label>Gruppo</label>
-    <div class="pfm-chipset" id="pf-gruppo-set"></div>
-  </div>
-
-  <div class="pfm-group">
-    <label>Livello accessibilità</label>
-    <div class="pfm-chipset" id="pf-livello-set"></div>
-  </div>
-
-  <div class="pfm-group">
-    <label>Rilevanza</label>
-    <div class="pfm-chipset" id="pf-rilevanza-set"></div>
-  </div>
-
-  <div class="pfm-group">
-    <label>Classe priorità</label>
-    <div class="pfm-chipset" id="pf-classe-set"></div>
-  </div>
-
-  <div id="pf-result-count" class="pfm-result">209 di 209 immobili</div>
-
-  <div class="pfm-footer">
-    <button id="pf-zoom" disabled>↗ Zoom sui risultati</button>
-    <button id="pf-reset">Ripristina filtri</button>
-  </div>
-</div>
 
 <!-- ═══ PANNELLO DESTRA ═══ -->
 <div id="rp-wrap">
@@ -283,6 +234,11 @@
       <button class="rp-tab" data-view="stats">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
         Statistiche
+      </button>
+      <button class="rp-tab" data-view="filtri">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 18h4v-2h-4v2zM3 6v2h18V6H3zm3 7h12v-2H6v2z"/></svg>
+        Filtri
+        <span id="pf-filter-badge" style="display:none"></span>
       </button>
     </div>
 
@@ -466,6 +422,57 @@
         <div id="stat-nota-qualita"></div>
       </div>
     </div><!-- /rp-stats -->
+
+    <!-- Vista: filtri geografici e tematici -->
+    <div id="rp-filtri" class="rp-view" style="display:none;">
+      <div class="rp-panel-header">
+        <div class="rp-panel-title">Filtri</div>
+        <div class="rp-panel-sub">Restringi gli immobili mostrati sulla mappa</div>
+      </div>
+      <div class="panel-section rp-scroll">
+        <div class="pfm-group pfm-geo">
+          <div class="pfm-field">
+            <label>Circoscrizione</label>
+            <select id="pf-circ"><option value="">— Tutte —</option></select>
+          </div>
+          <div class="pfm-field">
+            <label>Quartiere</label>
+            <select id="pf-quart"><option value="">— Tutti —</option></select>
+          </div>
+          <div class="pfm-field">
+            <label>UPL · Unità di Primo Livello</label>
+            <select id="pf-upl"><option value="">— Tutte —</option></select>
+          </div>
+        </div>
+
+        <div class="pfm-group">
+          <label>Gruppo</label>
+          <div class="pfm-chipset" id="pf-gruppo-set"></div>
+        </div>
+
+        <div class="pfm-group">
+          <label>Livello accessibilità</label>
+          <div class="pfm-chipset" id="pf-livello-set"></div>
+        </div>
+
+        <div class="pfm-group">
+          <label>Rilevanza</label>
+          <div class="pfm-chipset" id="pf-rilevanza-set"></div>
+        </div>
+
+        <div class="pfm-group">
+          <label>Classe priorità</label>
+          <div class="pfm-chipset" id="pf-classe-set"></div>
+        </div>
+
+        <div id="pf-result-count" class="pfm-result">209 di 209 immobili</div>
+
+        <div class="pfm-footer">
+          <button id="pf-zoom" disabled>↗ Zoom sui risultati</button>
+          <button id="pf-reset">Ripristina filtri</button>
+        </div>
+      </div>
+    </div><!-- /rp-filtri -->
 
   </div>
 </div>

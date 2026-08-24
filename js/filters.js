@@ -91,6 +91,7 @@ function pfBuildChipset(container, dimKey, propKey, order, colorMap, labelMap) {
       const v = btn.dataset.value;
       if (set.has(v)) set.delete(v); else set.add(v);
       pfRenderAll();
+      pfZoomToMatched();
     });
   });
 }
@@ -346,6 +347,7 @@ fetch(DATA.peba).then((r) => r.json()).then((geo) => {
     document.getElementById(`pf-${dim}`).addEventListener('change', (e) => {
       pfState[dim] = e.target.value;
       pfRenderAll();
+      pfZoomToMatched();
     });
   });
 
@@ -368,14 +370,8 @@ fetch(DATA.peba).then((r) => r.json()).then((geo) => {
     if (!e.target.closest('#pf-searchbar')) document.getElementById('pf-search-dd').classList.remove('open');
   });
 
-  // Modale filtri
-  const modal = document.getElementById('pf-modal');
-  const overlay = document.getElementById('pf-overlay');
-  const openModal = () => { modal.classList.add('open'); overlay.classList.add('open'); };
-  const closeModal = () => { modal.classList.remove('open'); overlay.classList.remove('open'); };
-  document.getElementById('pf-filter-btn').addEventListener('click', openModal);
-  document.getElementById('pf-modal-close').addEventListener('click', closeModal);
-  overlay.addEventListener('click', closeModal);
+  // Filtri: tab dedicata nel pannello destro
+  document.getElementById('pf-filter-btn').addEventListener('click', () => window.rpShowFiltri());
   document.getElementById('pf-reset').addEventListener('click', pfResetAll);
 
   document.getElementById('pf-zoom').addEventListener('click', pfZoomToMatched);

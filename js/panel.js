@@ -57,9 +57,14 @@ function rpApplyView(view) {
   document.getElementById('rp-gallery').style.display = (view === 'scheda' && rpSchedaSubview === 'gallery') ? '' : 'none';
   document.getElementById('rp-punto').style.display = (view === 'scheda' && rpSchedaSubview === 'punto') ? '' : 'none';
   document.getElementById('rp-stats').style.display = view === 'stats' ? '' : 'none';
+  document.getElementById('rp-filtri').style.display = view === 'filtri' ? '' : 'none';
   if (view === 'stats' && typeof window.pfBuildStatisticheTab === 'function') window.pfBuildStatisticheTab();
 }
 window.rpShowScheda = (subview) => { rpSchedaSubview = subview; rpApplyView('scheda'); };
+window.rpShowFiltri = () => {
+  rpApplyView('filtri');
+  if (typeof window.openRightPanel === 'function') window.openRightPanel();
+};
 document.getElementById('rp-nav').addEventListener('click', (e) => {
   const btn = e.target.closest('.rp-tab');
   if (!btn) return;
