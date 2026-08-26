@@ -137,17 +137,57 @@ function makeAttribNode(text, href) {
   return frag;
 }
 
-const OSM_TILES_LIGHT = ['https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}@2x.png'];
-const OSM_TILES_DARK = ['https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png'];
+// Attribuzione richiesta da OpenFreeMap (openfreemap.org/quick_start): OpenFreeMap + OpenMapTiles + OSM
+function makeAttribNodeOfm() {
+  const frag = document.createDocumentFragment();
+  const link = (text, href) => {
+    const a = document.createElement('a');
+    a.href = href;
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    a.textContent = text;
+    return a;
+  };
+  frag.appendChild(link('OpenFreeMap', 'https://openfreemap.org'));
+  frag.appendChild(document.createTextNode(' © '));
+  frag.appendChild(link('OpenMapTiles', 'https://www.openmaptiles.org/'));
+  frag.appendChild(document.createTextNode(' Dati da '));
+  frag.appendChild(link('OpenStreetMap', 'https://www.openstreetmap.org/copyright'));
+  frag.appendChild(document.createTextNode(' | Rete: OpenStreetMap contributors, elaborazione PalermoHub | Rilievo PEBA: Comune di Palermo'));
+  return frag;
+}
+
+// ── Basemap OSM: stile vettoriale OpenFreeMap (Positron / Fiord) ───────────
+// Sprite e font sono identici tra le due varianti (verificato sugli style.json
+// pubblicati), quindi sono fissi qui; solo sources/layers cambiano tra le due.
+const OFM_STYLE_URLS = {
+  light: 'https://tiles.openfreemap.org/styles/positron',
+  dark: 'https://tiles.openfreemap.org/styles/fiord',
+};
+const OFM_GLYPHS = 'https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf';
+const OFM_SPRITE = 'https://tiles.openfreemap.org/sprites/ofm_f384/ofm';
+const OFM_CACHE = { light: null, dark: null }; // { sources, layers } per variante, popolato dal fetch
+const ofmStylesReady = Promise.all(
+  Object.entries(OFM_STYLE_URLS).map(([variant, url]) =>
+    fetch(url)
+      .then((r) => r.json())
+      .then((style) => {
+        OFM_CACHE[variant] = {
+          sources: style.sources,
+          layers: style.layers.map((l) => ({ ...l, id: `ofm-${l.id}` })),
+        };
+      })
+      .catch((err) => console.error(`Basemap OpenFreeMap (${variant}) non caricata:`, err))
+  )
+);
+function ofmVariantCorrente() {
+  return document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+}
 
 const BASEMAPS = {
   osm: {
-    type: 'raster',
-    tiles: document.documentElement.getAttribute('data-theme') === 'dark' ? OSM_TILES_DARK : OSM_TILES_LIGHT,
-    tileSize: 256,
-    attribution: '© OpenStreetMap contributors © CartoDB',
-    attributionNode: makeAttribNode('© OpenStreetMap contributors © CartoDB', 'https://www.openstreetmap.org/copyright'),
-    maxzoom: 19,
+    type: 'ofm',
+    attributionNode: makeAttribNodeOfm(),
   },
   satellite: {
     type: 'raster',
@@ -170,18 +210,11 @@ const map = new maplibregl.Map({
   hash: true,
   style: {
     version: 8,
-    sources: {
-      'basemap-osm': {
-        type: BASEMAPS.osm.type,
-        tiles: BASEMAPS.osm.tiles,
-        tileSize: BASEMAPS.osm.tileSize,
-        maxzoom: BASEMAPS.osm.maxzoom,
-      },
-    },
-    layers: [
-      { id: 'basemap-osm-layer', type: 'raster', source: 'basemap-osm', paint: { 'raster-opacity': 1.0 } },
-    ],
-    glyphs: 'https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf',
+    sources: {},
+    layers: [],
+    // Basemap OpenFreeMap vero e proprio (sources+layers) aggiunto da renderBasemaps() al 'load'.
+    glyphs: OFM_GLYPHS,
+    sprite: OFM_SPRITE,
   },
   center: CENTER,
   zoom: ZOOM,
@@ -1170,20 +1203,56 @@ document.getElementById('tb-home').addEventListener('click', () => {
 let activeBasemaps = ['osm'];
 let topBasemapOpacity = 1;
 
+// Moltiplica una paint-property (numero letterale o espressione) per un fattore di opacità.
+function ofmOpacityMul(existing, factor) {
+  if (factor === 1) return existing;
+  return typeof existing === 'number' ? existing * factor : ['*', existing ?? 1, factor];
+}
+function ofmLayerConOpacita(layer, opacity) {
+  if (opacity === 1) return layer;
+  const paint = { ...(layer.paint || {}) };
+  if (layer.type === 'background') paint['background-opacity'] = ofmOpacityMul(paint['background-opacity'], opacity);
+  else if (layer.type === 'fill') paint['fill-opacity'] = ofmOpacityMul(paint['fill-opacity'], opacity);
+  else if (layer.type === 'line') paint['line-opacity'] = ofmOpacityMul(paint['line-opacity'], opacity);
+  else if (layer.type === 'symbol') {
+    paint['icon-opacity'] = ofmOpacityMul(paint['icon-opacity'], opacity);
+    paint['text-opacity'] = ofmOpacityMul(paint['text-opacity'], opacity);
+  }
+  return { ...layer, paint };
+}
+function removeOfmLayers() {
+  map.getStyle().layers.filter((l) => l.id.startsWith('ofm-')).forEach((l) => map.removeLayer(l.id));
+}
+function addOfmLayers(opacity, beforeId) {
+  const group = OFM_CACHE[ofmVariantCorrente()];
+  if (!group) return; // fetch dello style non ancora completato
+  Object.entries(group.sources).forEach(([id, src]) => {
+    if (!map.getSource(id)) map.addSource(id, src);
+  });
+  group.layers.forEach((layer) => {
+    if (!map.getLayer(layer.id)) map.addLayer(ofmLayerConOpacita(layer, opacity), beforeId);
+  });
+}
+
 function renderBasemaps() {
+  removeOfmLayers();
   Object.keys(BASEMAPS).forEach((key) => {
-    if (map.getLayer(`basemap-${key}-layer`)) map.removeLayer(`basemap-${key}-layer`);
+    if (key !== 'osm' && map.getLayer(`basemap-${key}-layer`)) map.removeLayer(`basemap-${key}-layer`);
   });
   const firstLayerId = map.getStyle().layers[0]?.id;
   activeBasemaps.forEach((key, i) => {
+    const isTop = i === activeBasemaps.length - 1;
+    const opacity = (activeBasemaps.length > 1 && isTop) ? topBasemapOpacity : 1;
+    if (key === 'osm') {
+      addOfmLayers(opacity, firstLayerId);
+      return;
+    }
     const layerId = `basemap-${key}-layer`;
     const sourceId = `basemap-${key}`;
     if (!map.getSource(sourceId)) {
       const bm = BASEMAPS[key];
       map.addSource(sourceId, { type: 'raster', tiles: bm.tiles, tileSize: bm.tileSize, maxzoom: bm.maxzoom });
     }
-    const isTop = i === activeBasemaps.length - 1;
-    const opacity = (activeBasemaps.length > 1 && isTop) ? topBasemapOpacity : 1;
     map.addLayer({ id: layerId, type: 'raster', source: sourceId, paint: { 'raster-opacity': opacity } }, firstLayerId);
   });
   const opacityWrap = document.getElementById('tb-basemap-opacity-wrap');
@@ -1238,7 +1307,7 @@ function updateAttribution(keys) {
     text.appendChild(BASEMAPS[key].attributionNode.cloneNode(true));
   });
 }
-map.on('load', () => renderBasemaps());
+map.on('load', () => { ofmStylesReady.then(renderBasemaps); });
 
 // ── Toolbar: tema colore mappa + legenda (livello / gruppo, esclusivi) ────
 document.getElementById('tb-theme').addEventListener('click', (e) => {
@@ -1299,12 +1368,8 @@ document.getElementById('tb-fullscreen').addEventListener('click', () => {
     localStorage.setItem('peba-theme', on ? 'dark' : 'light');
     btn.classList.toggle('active', on);
 
-    // La mappa base OSM è tile CartoDB: passa da light_all a dark_all.
-    // È una raster source, va ricreata (il tile url non è modificabile in place).
-    BASEMAPS.osm.tiles = on ? OSM_TILES_DARK : OSM_TILES_LIGHT;
-    if (map.getLayer('basemap-osm-layer')) map.removeLayer('basemap-osm-layer');
-    if (map.getSource('basemap-osm')) map.removeSource('basemap-osm');
-    if (map.isStyleLoaded()) renderBasemaps();
+    // La mappa base OSM è lo stile vettoriale OpenFreeMap: passa da Positron a Fiord.
+    if (map.isStyleLoaded()) ofmStylesReady.then(renderBasemaps);
   });
 })();
 
