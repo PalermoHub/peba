@@ -79,7 +79,7 @@ function pfPopulateSelect(selectEl, dimKey, propKey, allLabel) {
 // ── Chipset (Gruppo / Livello / Rilevanza / Classe): checkbox multiple con conteggio live ─
 function pfBuildChipset(container, dimKey, propKey, order, colorMap, labelMap) {
   container.innerHTML = order.map((v) => `
-    <button type="button" class="pf-chip-opt" data-dim="${dimKey}" data-value="${esc(v)}">
+    <button type="button" class="pf-chip-opt" data-dim="${dimKey}" data-value="${esc(v)}" title="${esc((labelMap && labelMap[v]) || v)}">
       <span class="pf-chip-dot" style="background:${(colorMap && colorMap[v]) || '#999'}"></span>
       <span class="pf-chip-lbl">${esc((labelMap && labelMap[v]) || v)}</span>
       <span class="pf-chip-cnt"></span>
@@ -209,8 +209,8 @@ function pfUpdateChips() {
 
   chipsEl.style.display = active.length ? 'flex' : 'none';
   chipsEl.innerHTML = active.map((f, i) => `
-    <span class="pf-chip">${esc(f.label)}<button class="pf-chip-close" data-i="${i}">✕</button></span>
-  `).join('') + (active.length > 1 ? `<button class="pf-chip pf-chip-resetall" id="pf-chips-resetall">✕ tutti</button>` : '');
+    <span class="pf-chip">${esc(f.label)}<button class="pf-chip-close" data-i="${i}" title="Rimuovi filtro «${esc(f.label)}»" aria-label="Rimuovi filtro «${esc(f.label)}»">✕</button></span>
+  `).join('') + (active.length > 1 ? `<button class="pf-chip pf-chip-resetall" id="pf-chips-resetall" title="Rimuovi tutti i filtri" aria-label="Rimuovi tutti i filtri">✕ tutti</button>` : '');
 
   chipsEl.querySelectorAll('.pf-chip-close').forEach((b) => {
     b.addEventListener('click', () => { active[+b.dataset.i].clear(); pfRenderAll(); });
