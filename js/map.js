@@ -695,7 +695,7 @@ function rpCriticitaList(testo) {
 }
 
 // Galleria foto: img/foto/<Codice>/01.{jpg|png} .. NN (NN = "N. foto rilievo")
-function rpGalleriaFoto(codice, nFoto) {
+function rpGalleriaFoto(codice, nFoto, descrizione) {
   if (!nFoto || nFoto <= 0) return null;
   const s = rpSec(`Foto sopralluogo (${nFoto})`);
   const grid = document.createElement('div');
@@ -710,7 +710,8 @@ function rpGalleriaFoto(codice, nFoto) {
     const full = `${base}.jpg`;
     srcs[i - 1] = full;
     const img = document.createElement('img');
-    img.loading = 'lazy'; img.alt = `Foto ${i} — ${esc(codice)}`;
+    const altTxt = descrizione ? `Foto ${i} di ${nFoto} — ${descrizione}` : `Foto ${i} — ${esc(codice)}`;
+    img.loading = 'lazy'; img.alt = altTxt; img.title = altTxt;
     img.dataset.tried = 'thumb';
     img.src = `${base}_thumb.jpg`;
     img.onerror = () => {
@@ -725,7 +726,7 @@ function rpGalleriaFoto(codice, nFoto) {
       }
     };
     btn.appendChild(img);
-    btn.addEventListener('click', () => openPhotoModal(srcs, i - 1, codice));
+    btn.addEventListener('click', () => openPhotoModal(srcs, i - 1, codice, descrizione));
     grid.appendChild(btn);
   }
   s.appendChild(grid);
@@ -765,6 +766,7 @@ function rpNotaQualitaDati() {
   let srcs = [];
   let idx = 0;
   let rotations = [];
+  let currentDescrizione = '';
 
   function applyRotation() {
     imgEl.style.transform = `rotate(${rotations[idx] || 0}deg)`;
@@ -778,6 +780,8 @@ function rpNotaQualitaDati() {
     const src = srcs[idx];
     if (!src) return;
     imgEl.src = src;
+    const altTxt = currentDescrizione ? `Foto ${idx + 1} di ${srcs.length} — ${currentDescrizione}` : `Foto ${idx + 1}`;
+    imgEl.alt = altTxt; imgEl.title = altTxt;
     applyRotation();
     counterEl.textContent = `${idx + 1} / ${srcs.length}`;
     if (saveBtn) { saveBtn.href = src; saveBtn.download = src.split('/').pop(); }
@@ -803,16 +807,18 @@ function rpNotaQualitaDati() {
       btn.type = 'button';
       btn.className = 'photo-modal-thumb';
       const img = document.createElement('img');
-      img.src = src; img.loading = 'lazy'; img.alt = `Foto ${i + 1}`;
+      const altTxt = currentDescrizione ? `Foto ${i + 1} di ${srcs.length} — ${currentDescrizione}` : `Foto ${i + 1}`;
+      img.src = src; img.loading = 'lazy'; img.alt = altTxt; img.title = altTxt;
       btn.appendChild(img);
       btn.addEventListener('click', () => { idx = i; show(); });
       thumbsEl.appendChild(btn);
     });
   }
-  window.openPhotoModal = (list, startIdx) => {
+  window.openPhotoModal = (list, startIdx, codice, descrizione) => {
     srcs = list.filter(Boolean);
     idx = Math.max(0, srcs.indexOf(list[startIdx]));
     rotations = srcs.map(() => 0);
+    currentDescrizione = descrizione || '';
     if (!srcs.length) return;
     modal.hidden = false;
     buildThumbs();
@@ -1053,7 +1059,12 @@ function showPebaDetail(p, lngLat) {
   const linkPdf = rpLinkPdf(p.Codice);
   if (linkPdf) sections.push(linkPdf);
 
-  const foto = rpGalleriaFoto(p.Codice, p['N. foto rilievo']);
+  const descrizioneFoto = [
+    esc(p['Nome Immobile']) || esc(p.Gruppo),
+    esc(p.Indirizzo) || esc(p['Nome/Localizzazione']),
+    esc(p['Livello accessibilita']),
+  ].filter(Boolean).join(' — ');
+  const foto = rpGalleriaFoto(p.Codice, p['N. foto rilievo'], descrizioneFoto);
   if (foto) sections.push(foto);
 
   sections.push(rpNotaQualitaDati());
