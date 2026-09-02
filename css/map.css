@@ -1681,13 +1681,13 @@ body:has(#rp-wrap.open) #info-panel {
   line-height: 1.4;
   color: #1a2a50;
 }
-.rp-crit-list li::before {
-  content: '⚠';
+.rp-crit-icon {
   position: absolute;
   left: 0;
-  top: 3px;
-  font-size: 10px;
+  top: 4px;
+  display: inline-flex;
   color: var(--c-brand-orange);
+  cursor: help;
 }
 
 /* Badge stabilità/costruibilità */
